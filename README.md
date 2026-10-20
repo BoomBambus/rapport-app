@@ -13,7 +13,7 @@ npm run preview    # gebaute Version ansehen
 npm test           # Tests (Kartenerkennung)
 ```
 
-Die Kamera funktioniert im Browser nur über **HTTPS** (oder `localhost`). Für den Einsatz `dist/` auf einen beliebigen statischen Webserver mit HTTPS legen. Auf dem Handy die Seite öffnen und **„Zum Startbildschirm hinzufügen“**: dann startet sie wie eine App und läuft auch offline.
+Die Kamera funktioniert im Browser nur über **HTTPS** (oder `localhost`). Für den Einsatz `dist/` auf einen beliebigen statischen Webserver mit HTTPS legen. Auf dem Handy die Seite einmal mit Internet öffnen, „Offline bereit“ abwarten und **„Zum Startbildschirm hinzufügen“**: dann startet sie wie eine App und läuft ohne Netz.
 
 ## Veröffentlichen mit GitHub Pages
 
@@ -32,16 +32,20 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 - Barcode: ZXing (Code 39 / Code 128), liefert die **Position** (z. B. `A26333-01`). Der Auftrag ergibt sich aus der Position.
 - Text: Tesseract (Deutsch) auf dem Gerät, ohne Server. `src/lib/cardParser.ts` liest Kunden-Nr., Kunde, Straße, PLZ/Ort, Telefon, Projekt, Auftrag + Bezeichnung und Position + Beschreibung anhand der Feldbeschriftungen und Spalten der Karte.
 - Ergebnis immer prüfen: Der Hinweis „Aus Scan · Bitte prüfen“ bleibt stehen. Der Kundenname in der schmalen Spalte ist am fehleranfälligsten.
-- Die OCR-Dateien (~5 MB) liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`). Sie werden beim ersten Scan geladen und danach für den Offline-Betrieb gespeichert.
+- Die OCR-Dateien (~5 MB) liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`). Sie werden beim ersten Öffnen der App mitgespeichert.
 - Tests mit dem OCR-Ergebnis der Beispielkarte (sauber, als Handyfoto, als Kamerabild) in `src/lib/cardParser.test.ts`.
 
 ## PDF
 
 `src/lib/pdf.ts` (jsPDF), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, Material und Stunden nebeneinander, Summe, Legende M/F/H, beide Unterschriften. Fotos kommen als Anhang auf eigene Seiten. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
 
-## Daten
+## Datenschutz und Offline-Betrieb
 
-Alles bleibt auf dem Gerät (IndexedDB): der Entwurf (auch Fotos und Unterschriften, übersteht Schließen und Neuladen), die gesendeten Rapporte der letzten 14 Tage und das Profil. Es gibt keinen Server.
+- **Keine Kundendaten auf fremden Servern.** Kundendaten, Arbeiten, Stunden, Fotos und Unterschriften liegen nur im Browser des Handys (IndexedDB): Entwurf, gesendete Rapporte der letzten 14 Tage, Profil. Es gibt kein Backend, keine Analyse und keine externen Schriften oder CDNs.
+- **Texterkennung und Barcode laufen auf dem Gerät.** Das Kamerabild wird nirgends hochgeladen.
+- **Sicherheitsrichtlinie (CSP)** in der gebauten App: Der Browser darf nur Dateien vom eigenen Server laden und blockiert jede Verbindung zu anderen Adressen. Daten verlassen das Handy nur, wenn der Mitarbeiter das PDF selbst über „Teilen“ verschickt oder herunterlädt.
+- **Komplett offline:** Beim ersten Öffnen (mit Internet) speichert die App alle Dateien inklusive Texterkennung (~10 MB) auf dem Gerät und meldet „Offline bereit“. Danach funktioniert alles ohne Netz: Start, Scan, alle Schritte, PDF. Mit Internet holt sie sich Updates automatisch.
+- Der Webserver (z. B. GitHub Pages) liefert nur die App-Dateien aus und sieht keine Rapportdaten.
 
 ## Offene Punkte
 

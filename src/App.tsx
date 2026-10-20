@@ -105,6 +105,12 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), 4500);
   }, []);
 
+  useEffect(() => {
+    const ok = () => flash('Offline bereit', 'Die App funktioniert jetzt auch ohne Internet – Scannen und PDF eingeschlossen.');
+    window.addEventListener('offline-bereit', ok);
+    return () => window.removeEventListener('offline-bereit', ok);
+  }, [flash]);
+
   const set = useCallback((p: Partial<Rapport>) => setD((s) => (s ? { ...s, ...p } : s)), []);
   const setFn = useCallback((fn: (r: Rapport) => Partial<Rapport>) => setD((s) => (s ? { ...s, ...fn(s) } : s)), []);
 

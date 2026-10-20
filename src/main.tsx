@@ -13,7 +13,11 @@ import './styles/base.css';
 import './styles/app.css';
 import App from './App';
 
-registerSW({ immediate: true });
+registerSW({
+  immediate: true,
+  // Alle Dateien liegen auf dem Gerät → App meldet „offline bereit“
+  onOfflineReady: () => window.dispatchEvent(new Event('offline-bereit')),
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
