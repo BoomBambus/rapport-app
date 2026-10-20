@@ -1,0 +1,142 @@
+/* App-Rahmen und wiederkehrende Bedienelemente. Maße aus „Rapport App.dc.html“. */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: #f0eee9;
+  font-family: var(--font-sans);
+  color: var(--tiefschwarz);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+button, input, textarea { font-family: inherit; }
+button:focus-visible, [role='checkbox']:focus-visible, [role='button']:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.app {
+  position: relative;
+  height: 100%;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--weiss);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+}
+.app.dunkel { background: var(--tiefschwarz); }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.safe-bottom { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+
+/* Umschalt-Knöpfe (Qualifikation, Art, Kategorie, Einheit): weiß/schwarz */
+.chip {
+  appearance: none;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--tiefschwarz);
+  border-radius: 2px;
+  background: var(--weiss);
+  color: var(--tiefschwarz);
+  font: 600 15px/1 var(--font-sans);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.chip:hover { background: var(--blau-hell); }
+.chip[aria-pressed='true'] { background: var(--tiefschwarz); color: var(--weiss); }
+.chip.klein { height: 36px; font-size: 14px; flex: none; }
+
+/* Textbaustein: schmal, normal gewichtet */
+.baustein {
+  appearance: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--tiefschwarz);
+  border-radius: 2px;
+  background: var(--weiss);
+  font: 400 14px/20px var(--font-sans);
+  color: var(--tiefschwarz);
+  cursor: pointer;
+}
+.baustein:hover { background: var(--blau-hell); }
+
+/* Plus/Minus */
+.stepper { display: flex; align-items: center; flex: none; }
+.stepper button {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--tiefschwarz);
+  background: var(--weiss);
+  font: 600 20px/1 var(--font-sans);
+  color: var(--tiefschwarz);
+  cursor: pointer;
+}
+.stepper button:hover { background: var(--blau-hell); }
+.stepper button:first-child { border-radius: 2px 0 0 2px; }
+.stepper button:last-child { border-radius: 0 2px 2px 0; }
+.stepper .wert {
+  min-width: 60px;
+  height: 44px;
+  border-top: 1px solid var(--tiefschwarz);
+  border-bottom: 1px solid var(--tiefschwarz);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0 4px;
+}
+.stepper.gross button { width: 52px; height: 52px; border-width: 2px; font-size: 22px; }
+.stepper.gross .wert { width: 84px; height: 52px; border-width: 2px; font-size: 22px; }
+
+/* Unterstrichener Textlink als Schaltfläche */
+.link-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 32px;
+  font: 400 14px/20px var(--font-sans);
+  color: var(--tiefschwarz);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.link-btn:hover { text-decoration-thickness: 2px; }
+
+.zeile {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--linie);
+}
+.zeile .titel { font-size: 16px; line-height: 22px; font-weight: 700; overflow-wrap: anywhere; }
+.zeile .meta, .klein-grau { font-size: 13px; line-height: 18px; color: var(--tiefschwarz-gedaempft); }
+.feld-titel { font-size: 14px; line-height: 20px; font-weight: 600; }
+.sperr { font-size: 12px; line-height: 18px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
+
+.x-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 44px;
+  height: 44px;
+  font: 400 28px/1 var(--font-sans);
+  color: var(--tiefschwarz);
+  cursor: pointer;
+  flex: none;
+}
+
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.grid-nr { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+@media (min-width: 520px) {
+  body { padding: 24px 0; }
+  .app { height: calc(100dvh - 48px); border: 1px solid var(--linie); }
+}

@@ -1,25 +1,64 @@
-# CODING AGENTS: READ THIS FIRST
+# Tagesrapport-App · Schlosserei Menge
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+Web-App (PWA) für Mitarbeiter: Rapportkarte scannen, Arbeiten, Material, Stunden, Fotos und Unterschriften erfassen, Rapport als A4-PDF teilen.
+Umsetzung von Variante **1a „Assistent“** aus dem Claude-Design-Entwurf (`project/Rapport Konzept.dc.html`, `project/Rapport App.dc.html`).
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+## Starten
 
-## What you should do — IMPORTANT
+```bash
+npm install
+npm run dev        # Entwicklung, http://localhost:5173
+npm run build      # Produktion nach dist/
+npm run preview    # gebaute Version ansehen
+npm test           # Tests (Kartenerkennung)
+```
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+Die Kamera funktioniert im Browser nur über **HTTPS** (oder `localhost`). Für den Einsatz `dist/` auf einen beliebigen statischen Webserver mit HTTPS legen. Auf dem Handy die Seite öffnen und **„Zum Startbildschirm hinzufügen“**: dann startet sie wie eine App und läuft auch offline.
 
-**Read `project/Rapport Konzept.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+## Veröffentlichen mit GitHub Pages
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+Der Workflow `.github/workflows/pages.yml` testet und baut die App bei jedem Push auf `main` und stellt sie unter `https://<github-name>.github.io/<repo>/` bereit.
+Einmalig im Repository unter **Settings → Pages → Build and deployment → Source** „**GitHub Actions**“ wählen.
 
-## About the design files
+## Ablauf
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = PDF erneut teilen), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
+2. **Scan**: Die Kamera sucht laufend den Code-39-Barcode der Rapportkarte. Wird er gefunden, wird ein Standbild per Texterkennung gelesen. Ohne Barcode (die Beispielkarte hat noch keinen): **„Karte lesen“** tippen. Ohne Kamera: Karte fotografieren oder ein Foto aus der Galerie wählen.
+3. Sieben Schritte mit Fortschrittsbalken: Auftrag → Arbeiten → Material → Stunden → Fotos → Unterschrift → Rapport prüfen. Pflichtangaben werden vor „Weiter“ geprüft.
+4. **Rapport senden** erzeugt das PDF und öffnet auf dem Handy das Teilen-Menü (Mail, Messenger, Drive …). Am PC wird es heruntergeladen. Danach steht der Rapport unter „Heute“.
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+## Kartenerkennung
 
-## Bundle contents
+- Barcode: ZXing (Code 39 / Code 128), liefert die **Position** (z. B. `A26333-01`). Der Auftrag ergibt sich aus der Position.
+- Text: Tesseract (Deutsch) auf dem Gerät, ohne Server. `src/lib/cardParser.ts` liest Kunden-Nr., Kunde, Straße, PLZ/Ort, Telefon, Projekt, Auftrag + Bezeichnung und Position + Beschreibung anhand der Feldbeschriftungen und Spalten der Karte.
+- Ergebnis immer prüfen: Der Hinweis „Aus Scan · Bitte prüfen“ bleibt stehen. Der Kundenname in der schmalen Spalte ist am fehleranfälligsten.
+- Die OCR-Dateien (~5 MB) liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`). Sie werden beim ersten Scan geladen und danach für den Offline-Betrieb gespeichert.
+- Tests mit dem OCR-Ergebnis der Beispielkarte (sauber, als Handyfoto, als Kamerabild) in `src/lib/cardParser.test.ts`.
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `App-Anforderungen klären` project files (HTML prototypes, assets, components)
+## PDF
+
+`src/lib/pdf.ts` (jsPDF), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, Material und Stunden nebeneinander, Summe, Legende M/F/H, beide Unterschriften. Fotos kommen als Anhang auf eigene Seiten. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
+
+## Daten
+
+Alles bleibt auf dem Gerät (IndexedDB): der Entwurf (auch Fotos und Unterschriften, übersteht Schließen und Neuladen), die gesendeten Rapporte der letzten 14 Tage und das Profil. Es gibt keinen Server.
+
+## Offene Punkte
+
+- **Materialstamm**: `src/data/katalog.ts` enthält Beispieldaten. Den echten Stamm dort eintragen (Nr., Bezeichnung, Einheit, Kategorie).
+- **Barcode auf der Karte**: Die Beispielkarte hat ein leeres Barcode-Feld. Die Erkennung läuft dann nur per Text. Mit Barcode ist die Position sicherer.
+- Gegenüber dem Entwurf ergänzt: Entwurf fortsetzen/verwerfen, Profil (Name, Qualifikation, Standort) statt fest „J. Keller“, Auslöser „Karte lesen“ und Galerie-Auswahl im Scan, „Heute“-Einträge erneut teilen, echtes Datum statt 20.10.2026.
+- Weggelassen: Variante 1b „Übersicht“ (nicht gewählt) und die Spalte „Gehen“ (laut Chat entfallen).
+
+## Aufbau
+
+```
+src/
+  App.tsx              Zustand, Schrittfolge, Prüfung, Senden
+  ds/                  Komponenten des Design-Systems (Port aus project/_ds)
+  screens/             Start, Scan, Schritte 1–6, PDF-Vorschau, Bottom-Sheets
+  lib/                 cardParser, ocr, pdf, code39, storage, format, types
+  data/katalog.ts      Materialkatalog (Beispiel), Einheiten, Textbausteine
+  styles/              Design-Tokens + App-CSS
+project/               Design-Entwurf aus Claude Design (Referenz)
+```

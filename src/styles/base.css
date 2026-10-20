@@ -1,0 +1,9 @@
+html,body{font-family:var(--font-sans);color:var(--text-body);background:var(--surface-page);font-size:var(--type-fliesstext-size);line-height:var(--type-fliesstext-line);-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+a:hover{color:var(--link-hover);text-decoration-thickness:2px}
+.sm-wortmarke{font-family:var(--font-sans);font-size:var(--type-wortmarke-size);line-height:var(--type-wortmarke-line);font-weight:var(--type-wortmarke-weight);letter-spacing:var(--type-wortmarke-tracking);text-transform:lowercase}
+.sm-sperrsatz{font-family:var(--font-sans);font-size:var(--type-sperrsatz-size);line-height:var(--type-sperrsatz-line);font-weight:var(--type-sperrsatz-weight);letter-spacing:var(--type-sperrsatz-tracking);text-transform:uppercase}
+.sm-titel{font-size:var(--type-titel-size);line-height:var(--type-titel-line);font-weight:var(--type-titel-weight);text-wrap:balance}
+.sm-zwischentitel{font-size:var(--type-zwischentitel-size);line-height:var(--type-zwischentitel-line);font-weight:var(--type-zwischentitel-weight)}
+.sm-fliesstext{font-size:var(--type-fliesstext-size);line-height:var(--type-fliesstext-line);font-weight:var(--type-fliesstext-weight);text-wrap:pretty}
+.sm-klein{font-size:var(--type-klein-size);line-height:var(--type-klein-line);font-weight:var(--type-klein-weight);color:var(--text-muted)}

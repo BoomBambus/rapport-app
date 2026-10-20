@@ -1,0 +1,12 @@
+:root{
+--font-sans:"Source Sans 3","Frutiger","Myriad Pro",system-ui,sans-serif;
+--weight-regular:400;--weight-semibold:600;--weight-bold:700;--weight-black:900;
+/* Marke */
+--type-wortmarke-size:72px;--type-wortmarke-line:0.95;--type-wortmarke-weight:900;--type-wortmarke-tracking:-0.01em;
+--type-sperrsatz-size:14px;--type-sperrsatz-line:20px;--type-sperrsatz-weight:600;--type-sperrsatz-tracking:0.5em;
+/* Text */
+--type-titel-size:40px;--type-titel-line:44px;--type-titel-weight:700;
+--type-zwischentitel-size:24px;--type-zwischentitel-line:30px;--type-zwischentitel-weight:700;
+--type-fliesstext-size:16px;--type-fliesstext-line:24px;--type-fliesstext-weight:400;
+--type-klein-size:13px;--type-klein-line:18px;--type-klein-weight:400;
+}

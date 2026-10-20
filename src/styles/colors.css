@@ -1,0 +1,32 @@
+:root{
+/* Markenfarben — exakt aus dem Logo-PDF */
+--menge-blau:#8dadd5;
+--tiefschwarz:#231e20;
+--signalrot:#ed1b24;
+--weiss:#ffffff;
+/* Abgeleitete Hilfsfarben (nicht im Logo) */
+--tiefschwarz-gedaempft:#5a5556;
+--blau-hell:#e8eff8;
+--linie:#c3d3e8;
+/* Interaktionszustände (abgeleitet, Ergänzung des Design Systems) */
+--menge-blau-hover:#7c9fcc;
+--menge-blau-press:#6e93c3;
+--tiefschwarz-hover:#3d3739;
+--overlay:rgba(35,30,32,.55);
+/* Semantische Aliase */
+--surface-page:var(--weiss);
+--surface-band:var(--menge-blau);
+--surface-box:var(--blau-hell);
+--surface-inverse:var(--tiefschwarz);
+--text-body:var(--tiefschwarz);
+--text-heading:var(--tiefschwarz);
+--text-muted:var(--tiefschwarz-gedaempft);
+--text-on-band:var(--tiefschwarz);
+--text-on-inverse:var(--weiss);
+--accent-stroke:var(--signalrot);
+--border-control:var(--tiefschwarz);
+--border-divider:var(--linie);
+--focus-ring:var(--tiefschwarz);
+--link:var(--tiefschwarz);
+--link-hover:var(--tiefschwarz-gedaempft);
+}
