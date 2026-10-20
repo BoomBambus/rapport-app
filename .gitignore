@@ -4,3 +4,6 @@ dev-dist
 *.local
 public/ocr
 *.tsbuildinfo
+# Echte Karten, Rapporte und Fotos nie einchecken (öffentliches Repository)
+project/uploads/
+*.pdf

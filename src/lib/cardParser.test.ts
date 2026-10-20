@@ -4,7 +4,8 @@ import scan from './__fixtures__/karte-scan.json';
 import foto from './__fixtures__/karte-foto.json';
 import kamera from './__fixtures__/karte-kamera.json';
 
-// Fixtures: Tesseract-Ergebnis (PSM 4) der Beispielkarte aus project/uploads –
+// Fixtures: Tesseract-Ergebnis (PSM 4) der Beispiel-Rapportkarte (Testkunde „Mustermann“;
+// die Karte selbst liegt aus Datenschutzgründen nicht im Repository) –
 // sauber gerendert, als „Handyfoto“ (Ausschnitt, gedreht, unscharf, kontrastarm) und als
 // 1280×720-Kamerabild (Kartenkopf auf grauem Grund; OCR liest die PLZ als „©8229“).
 
