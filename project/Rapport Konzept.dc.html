@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/colors.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/typography.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/base.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/styles.css">
+<script src="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/_ds_bundle.js"></script>
+<style>body{margin:0;background:#f0eee9;font-family:var(--font-sans);color:var(--tiefschwarz)}a{color:var(--tiefschwarz)}a:hover{color:var(--tiefschwarz-gedaempft)}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style>
+</helmet>
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Tagesrapport-App · zwei Abläufe, klickbar</span></div>
+  <div style="max-width:880px;margin:0 0 28px;background:var(--weiss);padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;font-size:14px;line-height:20px">
+    <div style="display:flex;flex-direction:column;gap:6px"><strong>Ablauf</strong><span>Karte scannen → Kunde, Auftrag, Position vorausgefüllt → Arbeiten, Material, Stunden, Fotos, Unterschrift ergänzen → PDF im Layout der Rapportkarte.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><strong>Varianten</strong><span><a class="dv-oid" href="#1a">1a</a> geführter Assistent, Schritt für Schritt. <a class="dv-oid" href="#1b">1b</a> Übersicht mit Abschnitten in beliebiger Reihenfolge.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><strong>Annahmen</strong><span>Stunden-Arten Werkstatt/Montage/Intern. Katalog und Mitarbeitername sind Beispieldaten – Materialstamm folgt. „Rapport senden“ erzeugt ein echtes PDF (A4, Code-39-Barcode, Fotos als Anhang) und lädt es herunter.</span></div>
+  </div>
+  <div class="dv-opts">
+    <div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Assistent · Schritt für Schritt mit Fortschritt</div>
+      <dc-import name="Rapport App" variante="assistent" start="start" hint-size="410px,864px"></dc-import>
+    </div>
+    <div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Übersicht · Abschnitte frei wählbar, Status je Abschnitt</div>
+      <dc-import name="Rapport App" variante="uebersicht" start="start" hint-size="410px,864px"></dc-import>
+    </div>
+    <div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Übersicht ausgefüllt (Beispieldaten)</div>
+      <dc-import name="Rapport App" variante="uebersicht" start="hub" demo="{{ true }}" hint-size="410px,864px"></dc-import>
+    </div>
+  </div>
+  <div class="dv-thd" style="margin-top:44px"><span class="dv-tname">Einzelscreens aus <a class="dv-oid" href="#1a">1a</a> (mit Beispieldaten, ebenfalls bedienbar)</span></div>
+  <div class="dv-opts">
+    <div class="dv-opt"><div class="dv-olabel">Scan</div><dc-import name="Rapport App" start="scan" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">1 · Auftrag aus Scan</div><dc-import name="Rapport App" start="auftrag" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">2 · Arbeiten</div><dc-import name="Rapport App" start="arbeiten" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">3 · Material</div><dc-import name="Rapport App" start="material" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">3 · Materialkatalog</div><dc-import name="Rapport App" start="material" sheet="katalog" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">3 · Händisch erfassen</div><dc-import name="Rapport App" start="material" sheet="manuell" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">4 · Stunden</div><dc-import name="Rapport App" start="stunden" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">5 · Fotos</div><dc-import name="Rapport App" start="fotos" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">6 · Unterschrift</div><dc-import name="Rapport App" start="unterschrift" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+    <div class="dv-opt"><div class="dv-olabel">7 · PDF-Rapport</div><dc-import name="Rapport App" start="pdf" demo="{{ true }}" hint-size="410px,864px"></dc-import></div>
+  </div>
+  <p class="dv-next">Weiter z. B.: „<a class="dv-oid" href="#1a">1a</a> nehmen, aber Material vor Arbeiten“ · „PDF-Layout näher an die Karte“ · „Spalte Gehen als Uhrzeit ergänzen“</p>
+</section>
+</x-dc>
+</body>
+</html>

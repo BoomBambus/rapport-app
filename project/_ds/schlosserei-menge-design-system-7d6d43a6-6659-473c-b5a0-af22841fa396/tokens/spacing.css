@@ -1,0 +1,15 @@
+:root{
+--space-8:8px;--space-16:16px;--space-24:24px;--space-48:48px;
+--page-margin:var(--space-48);--section-gap:var(--space-48);--block-gap:var(--space-24);--box-padding:var(--space-16);
+--radius-0:0;--radius-2:2px;--radius-4:4px;
+/* Roter Strich */
+--stroke-gross:16px;--stroke-klein:4px;
+/* Ränder */
+--border-thin:1px;--border-strong:2px;
+/* Bewegung (Ergänzung: Quelle definiert keine Animation) */
+--dur-fast:120ms; /* @kind other */
+--dur-base:200ms; /* @kind other */
+--ease-standard:cubic-bezier(.2,0,0,1); /* @kind other */
+/* Keine Schatten in der Marke — einzige Ausnahme: schwebende Ebenen (Dialog, Toast) */
+--shadow-none:none;--shadow-float:0 8px 24px rgba(35,30,32,.18);
+}

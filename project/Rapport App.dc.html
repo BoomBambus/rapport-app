@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/colors.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/typography.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/tokens/base.css">
+<link rel="stylesheet" href="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/styles.css">
+<script src="_ds/schlosserei-menge-design-system-7d6d43a6-6659-473c-b5a0-af22841fa396/_ds_bundle.js"></script>
+<style>body{margin:0;font-family:var(--font-sans);color:var(--tiefschwarz)}a{color:var(--tiefschwarz)}a:hover{color:var(--tiefschwarz-gedaempft)}</style>
+</helmet>
+<div style="width:410px;height:864px;box-sizing:border-box;border:10px solid var(--tiefschwarz);border-radius:52px;overflow:hidden;position:relative;background:var(--weiss);display:flex;flex-direction:column;font-family:var(--font-sans);color:var(--tiefschwarz)">
+
+  <div style="height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:14px;font-weight:600;background:{{ sbBg }};color:{{ sbFg }}">
+    <span>07:12</span><span>5G · 87 %</span>
+  </div>
+
+  <sc-if value="{{ isStart }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+      <div style="padding-top:8px">
+        <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Logo" width="{{ 196 }}" hint-size="196px,70px"></x-import>
+      </div>
+      <div style="padding:24px 16px 0;display:flex;flex-direction:column;gap:8px">
+        <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Eyebrow" hint-size="auto,20px">Tagesrapport</x-import>
+        <h1 style="margin:0;font-size:28px;line-height:34px;font-weight:700">Dienstag, 20. Oktober</h1>
+      </div>
+      <div style="padding:24px 16px 0;display:flex;flex-direction:column;gap:12px">
+        <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Card" variant="band" stroke="{{ true }}" title="Auftragskarte scannen" onClick="{{ startScan }}" hint-size="100%,150px">
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <span style="flex:1">Barcode der Rapportkarte erfassen. Kunde, Auftrag und Position werden übernommen.</span>
+            <img src="https://unpkg.com/lucide-static@0.460.0/icons/scan-barcode.svg" width="40" height="40" alt="" style="flex:none">
+          </div>
+        </x-import>
+        <button onClick="{{ startManual }}" style="appearance:none;border:0;background:none;padding:10px 0;min-height:44px;text-align:left;font:600 16px/24px var(--font-sans);color:var(--tiefschwarz);text-decoration:underline;text-underline-offset:4px;cursor:pointer">Ohne Karte beginnen →</button>
+      </div>
+      <div style="padding:24px 16px 24px;display:flex;flex-direction:column;gap:0">
+        <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Eyebrow" hint-size="auto,20px" style="margin-bottom:8px">Heute</x-import>
+        <sc-for list="{{ rapporte }}" as="r" hint-placeholder-count="1">
+          <div style="display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--linie)">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:16px;line-height:22px;font-weight:700">{{ r.pos }} · {{ r.text }}</span>
+              <span style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">{{ r.kunde }} · {{ r.std }}</span>
+            </div>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Badge" variant="{{ r.badge }}" hint-size="80px,24px">{{ r.status }}</x-import>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:auto;padding:16px 16px 28px;background:var(--blau-hell);font-size:13px;line-height:18px;display:flex;justify-content:space-between">
+        <span>Angemeldet: <strong>J. Keller</strong> · Facharbeiter</span><span>Werkstatt Dettingen</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isScan }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;background:var(--tiefschwarz);color:var(--weiss);display:flex;flex-direction:column;align-items:center;padding:24px 16px 32px;gap:24px">
+      <div style="align-self:stretch;display:flex;justify-content:space-between;align-items:center">
+        <button onClick="{{ goStart }}" style="appearance:none;border:0;background:none;color:var(--weiss);font:600 16px/24px var(--font-sans);min-height:44px;cursor:pointer;padding:0">Abbrechen</button>
+        <span style="font-size:12px;font-weight:600;letter-spacing:.3em;text-transform:uppercase">Scannen</span>
+        <span style="width:72px"></span>
+      </div>
+      <div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+        <div style="position:relative;width:320px;height:210px">
+          <div style="position:absolute;left:0;top:0;width:36px;height:36px;border-left:4px solid var(--weiss);border-top:4px solid var(--weiss)"></div>
+          <div style="position:absolute;right:0;top:0;width:36px;height:36px;border-right:4px solid var(--weiss);border-top:4px solid var(--weiss)"></div>
+          <div style="position:absolute;left:0;bottom:0;width:36px;height:36px;border-left:4px solid var(--weiss);border-bottom:4px solid var(--weiss)"></div>
+          <div style="position:absolute;right:0;bottom:0;width:36px;height:36px;border-right:4px solid var(--weiss);border-bottom:4px solid var(--weiss)"></div>
+          <div style="position:absolute;left:24px;right:24px;top:24px;bottom:24px;border:1px dashed var(--tiefschwarz-gedaempft);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--linie);text-align:center;padding:16px">Kamerabild · Rapportkarte mit Barcode</div>
+          <sc-if value="{{ scanFound }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:24px;right:24px;top:103px;height:4px;background:var(--signalrot)"></div>
+          </sc-if>
+        </div>
+        <div style="text-align:center;font-size:16px;line-height:24px;max-width:300px">{{ scanText }}</div>
+      </div>
+      <sc-if value="{{ scanFound }}" hint-placeholder-val="{{ false }}">
+        <div style="align-self:stretch;padding:16px;background:var(--weiss);color:var(--tiefschwarz);display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:12px;font-weight:600;letter-spacing:.3em;text-transform:uppercase">Erkannt</span>
+          <span style="font-size:20px;line-height:26px;font-weight:700">A26333-01 · Rapportposition Test</span>
+          <span style="font-size:14px;line-height:20px">Kunde 10868 · Mustermann, Mannheim</span>
+        </div>
+      </sc-if>
+      <button onClick="{{ startManual }}" style="appearance:none;border:0;background:none;color:var(--weiss);font:600 16px/24px var(--font-sans);min-height:44px;cursor:pointer;text-decoration:underline;text-underline-offset:4px">Auftragsdaten manuell eingeben</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ inFlow }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;border-bottom:1px solid var(--linie)">
+      <div style="height:52px;padding:0 16px 0 8px;display:flex;align-items:center;justify-content:space-between">
+        <button onClick="{{ back }}" style="appearance:none;border:0;background:none;display:flex;align-items:center;gap:4px;min-height:44px;padding:0 8px;font:600 16px/24px var(--font-sans);color:var(--tiefschwarz);cursor:pointer">
+          <img src="https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg" width="20" height="20" alt="">{{ backLabel }}
+        </button>
+        <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Badge" variant="rahmen" hint-size="90px,24px">{{ posBadge }}</x-import>
+      </div>
+      <div style="padding:4px 16px 0;display:flex;flex-direction:column;gap:8px">
+        <sc-if value="{{ isAssist }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:4px">
+            <sc-for list="{{ progress }}" as="p" hint-placeholder-count="7">
+              <div style="flex:1;height:4px;background:{{ p.bg }}"></div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="font-size:12px;line-height:18px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;margin-top:4px">{{ eyebrow }}</div>
+        <h1 style="margin:0;font-size:24px;line-height:30px;font-weight:700">{{ title }}</h1>
+      </div>
+      <div style="width:48px;height:4px;background:var(--signalrot);margin:12px 0 0"></div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto">
+
+      <sc-if value="{{ isHub }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ hubRows }}" as="h" hint-placeholder-count="6">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Card" variant="{{ h.variant }}" eyebrow="{{ h.status }}" title="{{ h.label }}" onClick="{{ h.open }}" hint-size="100%,96px">{{ h.summary }}</x-import>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAuftrag }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{ fromScan }}" hint-placeholder-val="{{ true }}">
+            <div style="background:var(--blau-hell);padding:12px 16px;display:flex;gap:12px;align-items:center;font-size:14px;line-height:20px">
+              <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Badge" variant="blau" hint-size="80px,24px">Aus Scan</x-import>
+              <span>Felder aus der Auftragskarte übernommen. Bitte prüfen.</span>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Kunden-Nr." value="{{ d.kundeNr }}" onChange="{{ on.kundeNr }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Kunde" value="{{ d.kunde }}" onChange="{{ on.kunde }}" hint-size="100%,72px"></x-import>
+          </div>
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Straße" value="{{ d.strasse }}" onChange="{{ on.strasse }}" hint-size="100%,72px"></x-import>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="PLZ, Ort" value="{{ d.ort }}" onChange="{{ on.ort }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Telefon" value="{{ d.tel }}" onChange="{{ on.tel }}" hint-size="100%,72px"></x-import>
+          </div>
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Projekt" placeholder="optional" value="{{ d.projekt }}" onChange="{{ on.projekt }}" hint-size="100%,72px"></x-import>
+          <div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Auftrag" required="{{ true }}" value="{{ d.auftrag }}" onChange="{{ on.auftrag }}" error="{{ errAuftrag }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Bezeichnung" value="{{ d.auftragText }}" onChange="{{ on.auftragText }}" hint-size="100%,72px"></x-import>
+          </div>
+          <div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Position" value="{{ d.pos }}" onChange="{{ on.pos }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Beschreibung" value="{{ d.posText }}" onChange="{{ on.posText }}" hint-size="100%,72px"></x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isArbeiten }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:24px">
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Ausgeführte Arbeiten" required="{{ true }}" multiline="{{ true }}" rows="{{ 7 }}" placeholder="Was wurde heute gemacht?" value="{{ d.arbeiten }}" onChange="{{ on.arbeiten }}" error="{{ errArbeiten }}" hint-size="100%,200px"></x-import>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ textbausteine }}" as="t" hint-placeholder-count="4">
+              <button onClick="{{ t.add }}" style="appearance:none;min-height:36px;padding:0 12px;border:1px solid var(--tiefschwarz);border-radius:2px;background:var(--weiss);font:400 14px/20px var(--font-sans);color:var(--tiefschwarz);cursor:pointer" style-hover="background:var(--blau-hell)">+ {{ t.label }}</button>
+            </sc-for>
+          </div>
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Bemerkungen" multiline="{{ true }}" rows="{{ 4 }}" placeholder="Mängel, offene Punkte, Nachlieferungen" hint="Erscheint im Rapport für den Kunden sichtbar." value="{{ d.bemerkungen }}" onChange="{{ on.bemerkungen }}" hint-size="100%,150px"></x-import>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMaterial }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:8px 16px 16px;display:flex;flex-direction:column">
+          <sc-if value="{{ noMaterial }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:24px 16px;background:var(--blau-hell);margin-top:8px;font-size:16px;line-height:24px">Noch kein Material erfasst. Wählen Sie aus dem Katalog oder erfassen Sie eine Position von Hand.</div>
+          </sc-if>
+          <sc-for list="{{ matRows }}" as="m" hint-placeholder-count="2">
+            <div style="display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--linie)">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:16px;line-height:22px;font-weight:700">{{ m.name }}</span>
+                <span style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">{{ m.meta }}</span>
+              </div>
+              <div style="display:flex;align-items:center;flex:none">
+                <button onClick="{{ m.dec }}" aria-label="weniger" style="appearance:none;width:44px;height:44px;border:1px solid var(--tiefschwarz);border-radius:2px 0 0 2px;background:var(--weiss);font:600 20px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer" style-hover="background:var(--blau-hell)">−</button>
+                <div style="min-width:60px;height:44px;box-sizing:border-box;border-top:1px solid var(--tiefschwarz);border-bottom:1px solid var(--tiefschwarz);display:flex;align-items:center;justify-content:center;gap:3px;font-size:16px;font-weight:700;padding:0 4px">{{ m.menge }}<span style="font-weight:400;font-size:13px">{{ m.einheit }}</span></div>
+                <button onClick="{{ m.inc }}" aria-label="mehr" style="appearance:none;width:44px;height:44px;border:1px solid var(--tiefschwarz);border-radius:0 2px 2px 0;background:var(--weiss);font:600 20px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer" style-hover="background:var(--blau-hell)">+</button>
+              </div>
+              <button onClick="{{ m.remove }}" aria-label="entfernen" style="appearance:none;width:32px;height:44px;border:0;background:none;font:400 24px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer;flex:none">×</button>
+            </div>
+          </sc-for>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:16px">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="outline" full-width="{{ true }}" onClick="{{ openKatalog }}" hint-size="100%,44px">Aus Katalog</x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="outline" full-width="{{ true }}" onClick="{{ openManuell }}" hint-size="100%,44px">Händisch</x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isStunden }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit).</div>
+          <sc-for list="{{ stdRows }}" as="r" hint-placeholder-count="1">
+            <div style="border:1px solid var(--linie);padding:16px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:12px;align-items:end">
+                <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Name" value="{{ r.name }}" onChange="{{ r.onName }}" placeholder="Mitarbeiter" hint-size="100%,72px"></x-import>
+                <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Datum" value="{{ r.datum }}" onChange="{{ r.onDatum }}" hint-size="100%,72px"></x-import>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:14px;line-height:20px;font-weight:600">Qualifikation</span>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                  <sc-for list="{{ r.qOpts }}" as="o" hint-placeholder-count="3">
+                    <button onClick="{{ o.pick }}" style="appearance:none;height:44px;border:1px solid var(--tiefschwarz);border-radius:2px;font:600 15px/1 var(--font-sans);cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:14px;line-height:20px;font-weight:600">Art</span>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                  <sc-for list="{{ r.artOpts }}" as="o" hint-placeholder-count="3">
+                    <button onClick="{{ o.pick }}" style="appearance:none;height:44px;border:1px solid var(--tiefschwarz);border-radius:2px;font:600 15px/1 var(--font-sans);cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <span style="font-size:14px;line-height:20px;font-weight:600">Stunden</span>
+                <div style="display:flex;align-items:center">
+                  <button onClick="{{ r.dec }}" aria-label="weniger" style="appearance:none;width:52px;height:52px;border:2px solid var(--tiefschwarz);border-radius:2px 0 0 2px;background:var(--weiss);font:600 22px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer" style-hover="background:var(--blau-hell)">−</button>
+                  <div style="width:84px;height:52px;box-sizing:border-box;border-top:2px solid var(--tiefschwarz);border-bottom:2px solid var(--tiefschwarz);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">{{ r.std }}</div>
+                  <button onClick="{{ r.inc }}" aria-label="mehr" style="appearance:none;width:52px;height:52px;border:2px solid var(--tiefschwarz);border-radius:0 2px 2px 0;background:var(--weiss);font:600 22px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer" style-hover="background:var(--blau-hell)">+</button>
+                </div>
+              </div>
+              <sc-if value="{{ r.canRemove }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ r.remove }}" style="appearance:none;border:0;background:none;padding:0;min-height:32px;align-self:flex-start;font:400 14px/20px var(--font-sans);color:var(--tiefschwarz);text-decoration:underline;text-underline-offset:4px;cursor:pointer">Eintrag entfernen</button>
+              </sc-if>
+            </div>
+          </sc-for>
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="outline" full-width="{{ true }}" onClick="{{ addStd }}" hint-size="100%,44px">+ Mitarbeiter hinzufügen</x-import>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 16px;background:var(--blau-hell)">
+            <span style="font-size:14px;font-weight:600;letter-spacing:.2em;text-transform:uppercase">Summe</span>
+            <span style="font-size:20px;font-weight:700">{{ sumStd }}</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFotos }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <input type="file" accept="image/*" capture="environment" multiple="{{ true }}" ref="{{ fileRef }}" onChange="{{ onFiles }}" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ fotoRows }}" as="f" hint-placeholder-count="3">
+              <div style="position:relative;aspect-ratio:1;background:var(--blau-hell);overflow:hidden">
+                <sc-if value="{{ f.hasSrc }}" hint-placeholder-val="{{ false }}">
+                  <img src="{{ f.src }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+                </sc-if>
+                <sc-if value="{{ f.noSrc }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tiefschwarz-gedaempft);text-align:center;padding:8px">{{ f.label }}</div>
+                </sc-if>
+                <div style="position:absolute;left:0;bottom:0;padding:2px 6px;background:var(--weiss);font-size:12px;line-height:16px">{{ f.zeit }}</div>
+                <button onClick="{{ f.remove }}" aria-label="Foto entfernen" style="appearance:none;position:absolute;right:0;top:0;width:32px;height:32px;border:0;background:var(--weiss);font:400 20px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer">×</button>
+              </div>
+            </sc-for>
+            <button onClick="{{ pickFoto }}" style="appearance:none;aspect-ratio:1;border:2px dashed var(--tiefschwarz);background:var(--weiss);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:600 14px/18px var(--font-sans);color:var(--tiefschwarz);cursor:pointer" style-hover="background:var(--blau-hell)">
+              <img src="https://unpkg.com/lucide-static@0.460.0/icons/camera.svg" width="28" height="28" alt="">Foto
+            </button>
+          </div>
+          <div style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">{{ fotoHint }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isUnterschrift }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Auftraggeber</span>
+              <button onClick="{{ clearAG }}" style="appearance:none;border:0;background:none;padding:0;min-height:32px;font:400 14px/20px var(--font-sans);color:var(--tiefschwarz);text-decoration:underline;text-underline-offset:4px;cursor:pointer">Löschen</button>
+            </div>
+            <canvas ref="{{ refAG }}" width="700" height="280" style="width:100%;height:140px;display:block;border:1px solid var(--tiefschwarz);border-radius:2px;background:var(--weiss);touch-action:none;cursor:crosshair"></canvas>
+            <span style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">{{ agHint }}</span>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Checkbox" label="Auftraggeber nicht anwesend" checked="{{ d.agAbwesend }}" onChange="{{ toggleAbwesend }}" hint-size="100%,24px"></x-import>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Auftragnehmer</span>
+              <button onClick="{{ clearAN }}" style="appearance:none;border:0;background:none;padding:0;min-height:32px;font:400 14px/20px var(--font-sans);color:var(--tiefschwarz);text-decoration:underline;text-underline-offset:4px;cursor:pointer">Löschen</button>
+            </div>
+            <canvas ref="{{ refAN }}" width="700" height="280" style="width:100%;height:140px;display:block;border:1px solid var(--tiefschwarz);border-radius:2px;background:var(--weiss);touch-action:none;cursor:crosshair"></canvas>
+            <span style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">20.10.2026, {{ anName }}</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;background:var(--blau-hell);display:flex;flex-direction:column;gap:12px;min-height:100%;box-sizing:border-box">
+          <div style="display:flex;justify-content:space-between;font-size:13px;line-height:18px"><span>{{ pdfName }}</span><span>{{ pdfInfo }}</span></div>
+          <div style="zoom:0.56;width:595px;min-height:842px;box-sizing:border-box;background:var(--weiss);padding:36px 40px 28px;font-size:10px;line-height:14px;color:var(--tiefschwarz);display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Logo" width="{{ 150 }}" hint-size="150px,54px"></x-import>
+              <div style="text-align:right;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:24px;line-height:28px;font-weight:700">Rapport</span>
+                <span>Nr. {{ rapportNr }}</span><span>Datum 20.10.2026</span>
+              </div>
+            </div>
+            <div style="width:40px;height:4px;background:var(--signalrot);margin-left:-40px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <span style="font-weight:700">Kunde: {{ d.kundeNr }}</span><span>{{ d.kunde }}</span><span>{{ d.strasse }}</span><span>{{ d.ort }}</span><span>{{ d.tel }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <span><strong>Projekt:</strong> {{ d.projekt }}</span>
+                <span><strong>Auftrag:</strong> {{ d.auftrag }} {{ d.auftragText }}</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:90px 1fr 120px;border-top:1px solid var(--tiefschwarz);border-bottom:1px solid var(--tiefschwarz)">
+              <span style="padding:4px 0;font-weight:700">Pos</span><span style="padding:4px 0;font-weight:700">Beschreibung / Menge</span><span style="padding:4px 0;font-weight:700">Barcode</span>
+              <span style="padding:4px 0;border-top:1px solid var(--linie)">{{ d.pos }}</span><span style="padding:4px 0;border-top:1px solid var(--linie)">{{ d.posText }}</span><span style="padding:4px 0;border-top:1px solid var(--linie);display:flex;flex-direction:column;gap:1px"><span style="display:flex;height:22px;align-items:stretch"><sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><span style="width:{{ b.w }}px;background:{{ b.c }}"></span></sc-for></span><span style="font-size:7px;text-align:center">*{{ d.pos }}*</span></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px"><span style="font-weight:700">Ausgeführte Arbeiten:</span><span style="min-height:42px;white-space:pre-wrap">{{ d.arbeiten }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px"><span style="font-weight:700">Bemerkungen:</span><span style="min-height:28px;white-space:pre-wrap">{{ d.bemerkungen }}</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div style="display:flex;flex-direction:column">
+                <span style="font-weight:700;letter-spacing:.3em;padding-bottom:4px">MATERIAL</span>
+                <div style="display:grid;grid-template-columns:40px 36px 1fr;border-top:1px solid var(--tiefschwarz)">
+                  <span style="padding:3px 0;font-weight:700">Menge</span><span style="padding:3px 0;font-weight:700">Einh.</span><span style="padding:3px 0;font-weight:700">Bezeichnung</span>
+                </div>
+                <sc-for list="{{ pdfMat }}" as="m" hint-placeholder-count="2">
+                  <div style="display:grid;grid-template-columns:40px 36px 1fr;border-top:1px solid var(--linie)">
+                    <span style="padding:3px 0">{{ m.menge }}</span><span style="padding:3px 0">{{ m.einheit }}</span><span style="padding:3px 0">{{ m.name }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column">
+                <span style="font-weight:700;letter-spacing:.3em;padding-bottom:4px">STUNDEN</span>
+                <div style="display:grid;grid-template-columns:1fr 18px 58px 52px 28px;border-top:1px solid var(--tiefschwarz)">
+                  <span style="padding:3px 0;font-weight:700">Name</span><span style="padding:3px 0;font-weight:700">*</span><span style="padding:3px 0;font-weight:700">Datum</span><span style="padding:3px 0;font-weight:700">Art</span><span style="padding:3px 0;font-weight:700;text-align:right">Std</span>
+                </div>
+                <sc-for list="{{ pdfStd }}" as="r" hint-placeholder-count="1">
+                  <div style="display:grid;grid-template-columns:1fr 18px 58px 52px 28px;border-top:1px solid var(--linie)">
+                    <span style="padding:3px 0">{{ r.name }}</span><span style="padding:3px 0">{{ r.q }}</span><span style="padding:3px 0">{{ r.datum }}</span><span style="padding:3px 0">{{ r.art }}</span><span style="padding:3px 0;text-align:right">{{ r.std }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;justify-content:space-between;border-top:1px solid var(--tiefschwarz);padding:3px 0;font-weight:700"><span>Summe</span><span>{{ sumStd }}</span></div>
+                <span style="font-size:8px;line-height:11px">reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit)<br>* M = Meister, F = Facharbeiter, H = Helfer</span>
+              </div>
+            </div>
+            <sc-if value="{{ hasFotos }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-weight:700">Fotodokumentation ({{ fotoCount }}) · Anhang</span>
+                <div style="display:flex;gap:6px">
+                  <sc-for list="{{ fotoRows }}" as="f" hint-placeholder-count="3">
+                    <div style="width:84px;height:56px;background:var(--blau-hell);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:8px">
+                      <sc-if value="{{ f.hasSrc }}" hint-placeholder-val="{{ false }}"><img src="{{ f.src }}" alt="" style="width:100%;height:100%;object-fit:cover"></sc-if>
+                      <sc-if value="{{ f.noSrc }}" hint-placeholder-val="{{ true }}"><span>{{ f.label }}</span></sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:32px;padding-top:12px">
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <div style="height:50px;display:flex;align-items:flex-end">
+                  <sc-if value="{{ hasSigAG }}" hint-placeholder-val="{{ false }}"><img src="{{ d.sigAG }}" alt="" style="height:50px"></sc-if>
+                  <sc-if value="{{ d.agAbwesend }}" hint-placeholder-val="{{ false }}"><span style="font-style:italic">Auftraggeber nicht anwesend</span></sc-if>
+                </div>
+                <div style="border-top:1px solid var(--tiefschwarz);padding-top:2px">20.10.2026, Unterschrift Auftraggeber</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <div style="height:50px;display:flex;align-items:flex-end">
+                  <sc-if value="{{ hasSigAN }}" hint-placeholder-val="{{ false }}"><img src="{{ d.sigAN }}" alt="" style="height:50px"></sc-if>
+                </div>
+                <div style="border-top:1px solid var(--tiefschwarz);padding-top:2px">20.10.2026, Unterschrift Auftragnehmer</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--linie);padding-top:6px;font-size:8px;color:var(--tiefschwarz-gedaempft)">Schlosserei Menge · Weiherstr. 12 · 78465 Konstanz-Dettingen · zertifiziert nach EN 1090</div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="flex:none;background:var(--menge-blau);padding:16px 16px 28px;display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ hasBandErr }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;line-height:20px;font-weight:600"><span style="width:16px;height:4px;background:var(--signalrot);flex:none"></span>{{ bandErr }}</div>
+      </sc-if>
+      <div style="display:flex;gap:12px">
+        <sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}">
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="outline" onClick="{{ share }}" hint-size="110px,44px">Teilen</x-import>
+        </sc-if>
+        <div style="flex:1">
+          <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="primary" full-width="{{ true }}" onClick="{{ primary }}" hint-size="100%,44px">{{ primaryLabel }}</x-import>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:44px;bottom:0;background:var(--overlay);display:flex;flex-direction:column;justify-content:flex-end">
+      <div onClick="{{ closeSheet }}" style="flex:1"></div>
+      <div style="background:var(--weiss);box-shadow:var(--shadow-float);max-height:88%;display:flex;flex-direction:column">
+        <div style="width:48px;height:4px;background:var(--signalrot)"></div>
+        <div style="padding:12px 8px 8px 16px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:20px;line-height:26px;font-weight:700">{{ sheetTitle }}</span>
+          <button onClick="{{ closeSheet }}" aria-label="Schließen" style="appearance:none;width:44px;height:44px;border:0;background:none;font:400 28px/1 var(--font-sans);color:var(--tiefschwarz);cursor:pointer">×</button>
+        </div>
+
+        <sc-if value="{{ isKatalog }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid var(--linie)">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" placeholder="Suchen: Rohr, M12, 100224 …" value="{{ katSuche }}" onChange="{{ onSuche }}" hint-size="100%,44px"></x-import>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">
+              <sc-for list="{{ katChips }}" as="c" hint-placeholder-count="6">
+                <button onClick="{{ c.pick }}" style="appearance:none;flex:none;height:36px;padding:0 12px;border:1px solid var(--tiefschwarz);border-radius:2px;font:600 14px/1 var(--font-sans);cursor:pointer;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="overflow-y:auto;flex:1;min-height:0;padding:0 16px">
+            <sc-for list="{{ katRows }}" as="k" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--linie)">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:16px;line-height:22px;font-weight:600">{{ k.name }}</span>
+                  <span style="font-size:13px;line-height:18px;color:var(--tiefschwarz-gedaempft)">{{ k.meta }}</span>
+                </div>
+                <button onClick="{{ k.add }}" style="appearance:none;flex:none;min-width:44px;height:44px;padding:0 10px;border:2px solid var(--tiefschwarz);border-radius:2px;font:600 15px/1 var(--font-sans);cursor:pointer;background:{{ k.bg }};color:{{ k.fg }}">{{ k.btn }}</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ katEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:24px 0;font-size:16px;line-height:24px">Kein Artikel gefunden. Erfassen Sie das Material von Hand.</div>
+            </sc-if>
+          </div>
+          <div style="padding:12px 16px 28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;border-top:1px solid var(--linie)">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="outline" full-width="{{ true }}" onClick="{{ openManuell }}" hint-size="100%,44px">Händisch erfassen</x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="primary" full-width="{{ true }}" onClick="{{ closeSheet }}" hint-size="100%,44px">Fertig</x-import>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isManuell }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:0 16px 28px;display:flex;flex-direction:column;gap:16px">
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Bezeichnung" required="{{ true }}" placeholder="z. B. Abdeckkappe Ø 42" value="{{ man.bez }}" onChange="{{ onManBez }}" error="{{ errManuell }}" hint-size="100%,72px"></x-import>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Input" label="Menge" type="text" inputmode="decimal" value="{{ man.menge }}" onChange="{{ onManMenge }}" hint-size="100%,72px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:14px;line-height:20px;font-weight:600">Einheit</span>
+              <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px">
+                <sc-for list="{{ einheitOpts }}" as="o" hint-placeholder-count="6">
+                  <button onClick="{{ o.pick }}" style="appearance:none;height:44px;border:1px solid var(--tiefschwarz);border-radius:2px;font:600 14px/1 var(--font-sans);cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Button" variant="primary" full-width="{{ true }}" onClick="{{ saveManuell }}" hint-size="100%,44px">Übernehmen</x-import>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:16px;right:16px;bottom:24px">
+      <x-import component-from-global-scope="SchlossereiMengeDesignSystem_7d6d43.Toast" title="{{ toastTitle }}" tone="{{ toastTone }}" onClose="{{ hideToast }}" hint-size="100%,72px" style="width:100%">{{ toastText }}</x-import>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:410,&quot;height&quot;:864},&quot;variante&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;assistent&quot;,&quot;uebersicht&quot;],&quot;default&quot;:&quot;assistent&quot;,&quot;tsType&quot;:&quot;'assistent'|'uebersicht'&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;start&quot;,&quot;scan&quot;,&quot;hub&quot;,&quot;auftrag&quot;,&quot;arbeiten&quot;,&quot;material&quot;,&quot;stunden&quot;,&quot;fotos&quot;,&quot;unterschrift&quot;,&quot;pdf&quot;],&quot;default&quot;:&quot;start&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;demo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;sheet&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;katalog&quot;,&quot;manuell&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const STEPS=[['auftrag','Auftrag','Auftragsdaten prüfen'],['arbeiten','Arbeiten','Ausgeführte Arbeiten'],['material','Material','Verwendetes Material'],['stunden','Stunden','Arbeitszeit erfassen'],['fotos','Fotos','Fotodokumentation'],['unterschrift','Unterschrift','Abnahme vor Ort'],['pdf','Rapport','Rapport prüfen']];
+const KAT=[
+{nr:'100120',name:'Flachstahl 40×5 S235',einheit:'m',kat:'Profile'},
+{nr:'100135',name:'Winkelstahl 50×5 S235',einheit:'m',kat:'Profile'},
+{nr:'100210',name:'Vierkantrohr 40×40×3',einheit:'m',kat:'Rohre'},
+{nr:'100224',name:'Rundrohr 42,4×2,0',einheit:'m',kat:'Rohre'},
+{nr:'100260',name:'Edelstahl-Handlauf Ø 42,4 V2A',einheit:'m',kat:'Rohre'},
+{nr:'100310',name:'Blech 2 mm verzinkt',einheit:'m²',kat:'Bleche'},
+{nr:'100330',name:'Tränenblech 5/7 mm',einheit:'m²',kat:'Bleche'},
+{nr:'200110',name:'Sechskantschraube M10×30 8.8 verz.',einheit:'Stk',kat:'Befestigung'},
+{nr:'200140',name:'Schwerlastanker M12×110',einheit:'Stk',kat:'Befestigung'},
+{nr:'200160',name:'Injektionsmörtel 300 ml',einheit:'Stk',kat:'Befestigung'},
+{nr:'300110',name:'Schweißdraht SG2 Ø 1,0',einheit:'kg',kat:'Verbrauch'},
+{nr:'300120',name:'Trennscheibe 125×1,0',einheit:'Stk',kat:'Verbrauch'},
+{nr:'300150',name:'Zinkstaubgrundierung',einheit:'l',kat:'Verbrauch'}];
+const KATS=['Alle','Profile','Rohre','Bleche','Befestigung','Verbrauch'];
+const EINH=['Stk','m','m²','kg','l','Psch'];
+const SCAN={kundeNr:'10868',kunde:'Mustermann',strasse:'Niemandslandstr. 1',ort:'68229 Mannheim',tel:'0621 / 4829-310',projekt:'',auftrag:'A26333',auftragText:'Testauftrag',pos:'A26333-01',posText:'Rapportposition Test'};
+const LEER={kundeNr:'',kunde:'',strasse:'',ort:'',tel:'',projekt:'',auftrag:'',auftragText:'',pos:'',posText:''};
+const P39={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw','5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn','A':'wnnnnwnnw','B':'nnwnnwnnw','C':'wnwnnwnnn','D':'nnnnwwnnw','E':'wnnnwwnnn','F':'nnwnwwnnn','G':'nnnnnwwnw','H':'wnnnnwwnn','I':'nnwnnwwnn','J':'nnnnwwwnn','K':'wnnnnnnww','L':'nnwnnnnww','M':'wnwnnnnwn','N':'nnnnwnnww','O':'wnnnwnnwn','P':'nnwnwnnwn','Q':'nnnnnnwww','R':'wnnnnnwwn','S':'nnwnnnwwn','T':'nnnnwnwwn','U':'wwnnnnnnw','V':'nwwnnnnnw','W':'wwwnnnnnn','X':'nwnnwnnnw','Y':'wwnnwnnnn','Z':'nwwnwnnnn','-':'nwnnnnwnw','*':'nwnnwnwnn'};
+const BAUSTEINE=['Montage vor Ort','Aufmaß genommen','Schweißarbeiten','Nacharbeit / Reparatur'];
+const fmt=n=>String(Math.round(n*100)/100).replace('.',',');
+const fmtStd=n=>n.toFixed(1).replace('.',',');
+let uid=100;
+function scribble(){try{const c=document.createElement('canvas');c.width=700;c.height=280;const x=c.getContext('2d');x.lineWidth=5;x.lineCap='round';x.strokeStyle='#231e20';x.beginPath();x.moveTo(60,190);for(let i=0;i<=60;i++){const t=i/60;x.lineTo(60+t*520,170-Math.sin(t*18)*50*(1-t*.6)-t*40);}x.stroke();x.beginPath();x.moveTo(90,215);x.lineTo(560,200);x.stroke();return c.toDataURL();}catch(e){return null;}}
+
+class Component extends DCLogic {
+  constructor(p){
+    super(p);
+    const demo=!!this.props.demo, start=this.props.start||'start';
+    const prefilled=demo||!['start','scan'].includes(start);
+    const sig=demo?scribble():null;
+    this.state={screen:start,fromScan:true,scanFound:false,sheet:this.props.sheet||null,katSuche:'',katFilter:'Alle',man:{bez:'',menge:'1',einheit:'Stk'},errors:{},bandErr:null,toast:false,
+      rapporte:[{pos:'A26219-03',text:'Geländer Treppenhaus',kunde:'Huber GmbH, Allensbach',std:'7,5 Std',status:'Gesendet',badge:'hell'}],
+      data:prefilled?this.sample(demo,sig):this.fresh(LEER)};
+    this.pads={};this.fileRef=React.createRef();this.timers=[];
+    this.refAG=el=>this.setupPad(el,'sigAG');this.refAN=el=>this.setupPad(el,'sigAN');
+  }
+  componentWillUnmount(){this.timers.forEach(clearTimeout);}
+  fresh(base){return {...base,arbeiten:'',bemerkungen:'',material:[],stunden:[{id:uid++,name:'J. Keller',q:'F',datum:'20.10.2026',art:'Montage',std:0}],fotos:[],sigAG:null,sigAN:null,agAbwesend:false};}
+  sample(demo,sig){
+    const d=this.fresh(SCAN); if(!demo) return d;
+    return {...d,arbeiten:'Treppengeländer im Außenbereich montiert. Pfosten mit Schwerlastankern befestigt, Handlauf angepasst und verschraubt.',bemerkungen:'Endkappe am unteren Handlauf fehlt, wird nachgeliefert.',
+      material:[{id:uid++,nr:'100224',name:'Rundrohr 42,4×2,0',einheit:'m',menge:6,quelle:'Katalog'},{id:uid++,nr:'200140',name:'Schwerlastanker M12×110',einheit:'Stk',menge:8,quelle:'Katalog'},{id:uid++,nr:'',name:'Abdeckkappe Kunststoff Ø 42',einheit:'Stk',menge:4,quelle:'Händisch'}],
+      stunden:[{id:uid++,name:'J. Keller',q:'F',datum:'20.10.2026',art:'Montage',std:6.5},{id:uid++,name:'T. Brandt',q:'H',datum:'20.10.2026',art:'Montage',std:6.5}],
+      fotos:[{id:uid++,zeit:'08:41',src:null},{id:uid++,zeit:'11:02',src:null},{id:uid++,zeit:'13:27',src:null}],sigAG:sig,sigAN:sig};
+  }
+  variante(){return this.props.variante==='uebersicht'?'uebersicht':'assistent';}
+  setData(p){this.setState(s=>({data:{...s.data,...p}}));}
+  go(screen){this.setState({screen,errors:{},bandErr:null,sheet:null});const el=document.querySelector('[data-scroll]');}
+  validate(id){
+    const d=this.state.data;
+    if(id==='auftrag'&&!d.auftrag.trim()) return {errors:{auftrag:'Bitte geben Sie die Auftragsnummer ein.'}};
+    if(id==='arbeiten'&&!d.arbeiten.trim()) return {errors:{arbeiten:'Bitte beschreiben Sie die ausgeführten Arbeiten.'}};
+    if(id==='stunden'&&!d.stunden.some(r=>r.name.trim()&&r.std>0)) return {bandErr:'Bitte erfassen Sie mindestens einen Mitarbeiter mit Stunden.'};
+    if(id==='unterschrift'){ if(!d.sigAN) return {bandErr:'Bitte unterschreiben Sie als Auftragnehmer.'}; if(!d.sigAG&&!d.agAbwesend) return {bandErr:'Unterschrift des Auftraggebers fehlt – oder „nicht anwesend“ wählen.'}; }
+    return null;
+  }
+  startScan(){
+    this.setState({screen:'scan',scanFound:false});
+    this.timers.push(setTimeout(()=>this.setState({scanFound:true}),1600));
+    this.timers.push(setTimeout(()=>{ if(this.state.screen!=='scan')return; this.setState({data:this.fresh(SCAN),fromScan:true}); this.go(this.variante()==='uebersicht'?'hub':'auftrag');},3000));
+  }
+  startManual(){this.timers.forEach(clearTimeout);this.setState({data:this.fresh(LEER),fromScan:false});this.go(this.variante()==='uebersicht'?'hub':'auftrag');}
+  loadJsPdf(){
+    if(window.jspdf) return Promise.resolve(window.jspdf.jsPDF);
+    if(!window.__jspdfP) window.__jspdfP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';s.onload=()=>res(window.jspdf.jsPDF);s.onerror=()=>{window.__jspdfP=null;rej(new Error('load'));};document.head.appendChild(s);});
+    return window.__jspdfP;
+  }
+  toImg(src,w,h,type,cover){return new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);if(cover){const r=Math.max(w/im.width,h/im.height),iw=im.width*r,ih=im.height*r;x.drawImage(im,(w-iw)/2,(h-ih)/2,iw,ih);}else x.drawImage(im,0,0,w,h);res(c.toDataURL(type,0.85));};im.onerror=()=>res(null);im.src=src;});}
+  barcode(doc,code,x,y,w,h){
+    const P=P39;
+    const chars=('*'+String(code).toUpperCase().replace(/[^0-9A-Z-]/g,'')+'*').split(''),WR=2.5,unit=w/(chars.length*(6+3*WR+1)-1);
+    let cx=x;doc.setFillColor(35,30,32);
+    chars.forEach(ch=>{P[ch].split('').forEach((m,k)=>{const bw=(m==='w'?WR:1)*unit;if(k%2===0)doc.rect(cx,y,bw,h,'F');cx+=bw;});cx+=unit;});
+  }
+  async buildPdf(){
+    const JsPDF=await this.loadJsPdf(),d=this.state.data;
+    const doc=new JsPDF({unit:'mm',format:'a4'}),L=18,R=192,W=R-L;
+    const ink=()=>doc.setTextColor(35,30,32),bold=()=>doc.setFont('helvetica','bold'),norm=()=>doc.setFont('helvetica','normal');
+    const rule=(yy,strong,x1=L,x2=R)=>{if(strong){doc.setDrawColor(35,30,32);doc.setLineWidth(0.3);}else{doc.setDrawColor(195,211,232);doc.setLineWidth(0.2);}doc.line(x1,yy,x2,yy);};
+    let y=0;const ensure=h=>{if(y+h>278){doc.addPage();y=20;return true;}return false;};
+    const nr='R-'+(d.pos||d.auftrag||'0000')+'-1';
+    ink();norm();
+    const logoEl=document.querySelector('img[alt="Schlosserei Menge"]');
+    const logo=logoEl?await this.toImg(logoEl.src,1125,402,'image/png'):null;
+    if(logo) doc.addImage(logo,'PNG',L,12,50,17.9); else {bold();doc.setFontSize(20);doc.text('menge',L,24);}
+    bold();doc.setFontSize(20);doc.text('Rapport',R,20,{align:'right'});
+    norm();doc.setFontSize(9);doc.text('Nr. '+nr,R,26,{align:'right'});doc.text('Datum 20.10.2026',R,30.5,{align:'right'});
+    doc.setFillColor(237,27,36);doc.rect(0,36,14,1.4,'F');
+    y=46;doc.setFontSize(10);
+    bold();doc.text('Kunde: '+(d.kundeNr||'–'),L,y);norm();
+    [d.kunde,d.strasse,d.ort,d.tel].filter(Boolean).forEach((t,n)=>doc.text(t,L,y+5*(n+1)));
+    bold();doc.text('Projekt:',110,y);doc.text('Auftrag:',110,y+5);norm();doc.text(d.projekt||'–',127,y);doc.text(((d.auftrag||'')+' '+(d.auftragText||'')).trim()||'–',127,y+5);
+    y=74;rule(y,true);bold();doc.text('Pos',L,y+5);doc.text('Beschreibung / Menge',52,y+5);doc.text('Barcode',140,y+5);rule(y+7.5,false);
+    norm();doc.text(d.pos||'–',L,y+14);doc.text(doc.splitTextToSize(d.posText||'',84),52,y+14);
+    if(d.pos){this.barcode(doc,d.pos,140,y+9.5,52,10);doc.setFontSize(7);doc.text('*'+d.pos.toUpperCase()+'*',166,y+22.5,{align:'center'});doc.setFontSize(10);}
+    y+=25;rule(y,true);
+    const block=(label,text,minLines)=>{y+=8;ensure(10);bold();doc.text(label,L,y);norm();const ls=doc.splitTextToSize(text||'',W);ls.forEach(l=>{y+=4.8;ensure(5);doc.text(l,L,y);});y+=Math.max(0,minLines-ls.length)*4.8;};
+    block('Ausgeführte Arbeiten:',d.arbeiten,3);block('Bemerkungen:',d.bemerkungen,2);
+    y+=10;ensure(20);
+    const hdr=()=>{doc.setFontSize(10);bold();doc.text('MATERIAL',L,y,{charSpace:1});doc.text('STUNDEN',110,y,{charSpace:1});y+=3;rule(y,true,L,102);rule(y,true,110,R);doc.setFontSize(8.5);doc.text('Menge',L,y+4.5);doc.text('Einh.',L+15,y+4.5);doc.text('Bezeichnung',L+27,y+4.5);doc.text('Name',110,y+4.5);doc.text('*',141,y+4.5);doc.text('Datum',146,y+4.5);doc.text('Art',163,y+4.5);doc.text('Std',R,y+4.5,{align:'right'});y+=6.5;norm();};
+    hdr();
+    const mat=d.material,std=d.stunden.filter(r=>r.name||r.std),n=Math.max(mat.length,std.length,3);
+    for(let k=0;k<n;k++){
+      const m=mat[k],r=std[k],ml=m?doc.splitTextToSize(m.name,57):[],h=Math.max(1,ml.length)*3.8+2;
+      if(ensure(h+2)) hdr();
+      rule(y,false,L,102);rule(y,false,110,R);
+      if(m){doc.text(fmt(m.menge),L,y+4);doc.text(m.einheit,L+15,y+4);doc.text(ml,L+27,y+4);}
+      if(r){doc.text(doc.splitTextToSize(r.name,30)[0]||'',110,y+4);doc.text(r.q,141,y+4);doc.text(r.datum.slice(0,6),146,y+4);doc.text(r.art,163,y+4);doc.text(fmtStd(r.std),R,y+4,{align:'right'});}
+      y+=h;
+    }
+    rule(y,true,L,102);rule(y,true,110,R);bold();doc.text('Summe',110,y+4.5);doc.text(fmtStd(d.stunden.reduce((a,r)=>a+r.std,0))+' Std',R,y+4.5,{align:'right'});norm();
+    doc.setFontSize(7.5);doc.text('reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit)',110,y+9);doc.text('* M = Meister, F = Facharbeiter, H = Helfer',110,y+12.5);
+    if(d.fotos.length){doc.text('Fotodokumentation: '+d.fotos.length+' Fotos im Anhang',L,y+9);}
+    y+=14;doc.setFontSize(9);
+    let sy=Math.max(y+8,250);if(sy+24>280){doc.addPage();sy=30;}
+    if(d.sigAG&&!d.agAbwesend) doc.addImage(d.sigAG,'PNG',L,sy,40,16);
+    if(d.agAbwesend){doc.setFont('helvetica','italic');doc.text('Auftraggeber nicht anwesend',L,sy+13);norm();}
+    if(d.sigAN) doc.addImage(d.sigAN,'PNG',110,sy,40,16);
+    rule(sy+17,true,L,100);rule(sy+17,true,110,R);
+    doc.setFontSize(8);doc.text('20.10.2026, Unterschrift Auftraggeber',L,sy+21);doc.text('20.10.2026, Unterschrift Auftragnehmer',110,sy+21);
+    if(d.fotos.length){
+      doc.addPage();y=20;bold();doc.setFontSize(12);doc.text('Fotodokumentation · '+(d.pos||d.auftrag),L,y);norm();doc.setFillColor(237,27,36);doc.rect(0,y+4,14,1.4,'F');y+=12;
+      const fw=(W-6)/2,fh=fw*2/3;
+      for(let k=0;k<d.fotos.length;k++){
+        const f=d.fotos[k],col=k%2;if(col===0&&k>0)y+=fh+10;if(col===0&&ensure(fh+8)){}
+        const x=L+col*(fw+6);
+        const img=f.src?await this.toImg(f.src,1200,800,'image/jpeg',true):null;
+        if(img) doc.addImage(img,'JPEG',x,y,fw,fh); else {doc.setFillColor(232,239,248);doc.rect(x,y,fw,fh,'F');doc.setFontSize(9);doc.text('Foto '+(k+1),x+fw/2,y+fh/2,{align:'center'});}
+        doc.setFontSize(8);doc.text('Foto '+(k+1)+' · 20.10.2026, '+f.zeit,x,y+fh+4);
+      }
+    }
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){doc.setPage(p);rule(283,false);doc.setFontSize(7.5);doc.setTextColor(90,85,86);doc.text('Schlosserei Menge · Weiherstr. 12 · 78465 Konstanz-Dettingen · zertifiziert nach EN 1090',L,287);doc.text('Seite '+p+' von '+pages,R,287,{align:'right'});}
+    return {doc,name:'Rapport_'+(d.pos||d.auftrag||'neu')+'_2026-10-20.pdf'};
+  }
+  async share(){
+    this.setState({busy:true});
+    try{const {doc,name}=await this.buildPdf();const file=new File([doc.output('blob')],name,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:name}).catch(()=>{});
+      else {doc.save(name);this.flash('PDF heruntergeladen',name,'info');}
+    }catch(e){this.flash('PDF konnte nicht erstellt werden','Bitte prüfen Sie die Internetverbindung.','fehler');}
+    this.setState({busy:false});
+  }
+  flash(title,text,tone){this.setState({toast:true,toastTitle:title,toastText:text,toastTone:tone});this.timers.push(setTimeout(()=>this.setState({toast:false}),4500));}
+  async send(){
+    if(this.state.busy) return;
+    this.setState({busy:true});
+    let name;
+    try{const r=await this.buildPdf();name=r.name;r.doc.save(name);}catch(e){this.setState({busy:false});return this.flash('PDF konnte nicht erstellt werden','Bitte prüfen Sie die Internetverbindung.','fehler');}
+    const d=this.state.data,sum=d.stunden.reduce((a,r)=>a+r.std,0);
+    this.flash('Rapport gesendet','PDF erstellt: '+name,'info');
+    this.setState(s=>({busy:false,rapporte:[{pos:d.pos||d.auftrag,text:d.posText||d.auftragText||'Rapport',kunde:[d.kunde,d.ort.replace(/^\d+\s*/,'')].filter(Boolean).join(', '),std:fmtStd(sum)+' Std',status:'Gesendet',badge:'blau'},...s.rapporte]}));
+    this.go('start');
+    this.timers.push(setTimeout(()=>this.setState({toast:false}),4000));
+  }
+  primary(){
+    const v=this.variante(),scr=this.state.screen,i=STEPS.findIndex(x=>x[0]===scr);
+    if(scr==='pdf') return this.send();
+    if(scr==='hub'){
+      const miss=STEPS.slice(0,6).find(x=>this.validate(x[0]));
+      if(miss) return this.setState({bandErr:'Noch offen: '+STEPS.slice(0,6).filter(x=>this.validate(x[0])).map(x=>x[1]).join(', ')});
+      return this.go('pdf');
+    }
+    const err=this.validate(scr); if(err) return this.setState({errors:{},bandErr:null,...err});
+    this.go(v==='uebersicht'?'hub':STEPS[i+1][0]);
+  }
+  back(){
+    const v=this.variante(),scr=this.state.screen,i=STEPS.findIndex(x=>x[0]===scr);
+    if(scr==='hub') return this.go('start');
+    if(v==='uebersicht') return this.go('hub');
+    this.go(i>0?STEPS[i-1][0]:'start');
+  }
+  setupPad(el,key){
+    if(!el) return; this.pads[key]=el; if(el._pad) return; el._pad=true;
+    const ctx=el.getContext('2d');ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#231e20';
+    const src=this.state.data[key]; if(src){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0);im.src=src;}
+    let on=false;
+    const pt=e=>{const r=el.getBoundingClientRect();return [(e.clientX-r.left)*el.width/r.width,(e.clientY-r.top)*el.height/r.height];};
+    el.addEventListener('pointerdown',e=>{on=true;try{el.setPointerCapture(e.pointerId)}catch(_){};const [x,y]=pt(e);ctx.beginPath();ctx.moveTo(x,y);});
+    el.addEventListener('pointermove',e=>{if(!on)return;const [x,y]=pt(e);ctx.lineTo(x,y);ctx.stroke();});
+    const end=()=>{if(!on)return;on=false;this.setData({[key]:el.toDataURL()});this.setState({bandErr:null});};
+    el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  }
+  clearPad(key){const el=this.pads[key];if(el)el.getContext('2d').clearRect(0,0,el.width,el.height);this.setData({[key]:null});}
+  addKat(k){this.setState(s=>{const m=s.data.material,ex=m.find(x=>x.nr===k.nr);return {data:{...s.data,material:ex?m.map(x=>x===ex?{...x,menge:x.menge+1}:x):[...m,{id:uid++,nr:k.nr,name:k.name,einheit:k.einheit,menge:1,quelle:'Katalog'}]}};});}
+  updMat(id,fn){this.setState(s=>({data:{...s.data,material:s.data.material.map(x=>x.id===id?fn(x):x)}}));}
+  updStd(id,p){this.setState(s=>({data:{...s.data,stunden:s.data.stunden.map(x=>x.id===id?{...x,...p}:x)},bandErr:null}));}
+  chip(on){return on?{bg:'var(--tiefschwarz)',fg:'var(--weiss)'}:{bg:'var(--weiss)',fg:'var(--tiefschwarz)'};}
+
+  renderVals(){
+    const s=this.state,d=s.data,v=this.variante(),scr=s.screen;
+    const i=STEPS.findIndex(x=>x[0]===scr),isHub=scr==='hub',inFlow=i>=0||isHub;
+    const on={};Object.keys(SCAN).concat(['arbeiten','bemerkungen']).forEach(k=>on[k]=e=>{this.setData({[k]:e.target.value});if(s.errors[k])this.setState({errors:{}});});
+    const sum=d.stunden.reduce((a,r)=>a+r.std,0);
+    const step=m=>(m.einheit==='Stk'||m.einheit==='Psch')?1:0.5;
+    const q=s.katSuche.trim().toLowerCase();
+    const katRows=KAT.filter(k=>(s.katFilter==='Alle'||k.kat===s.katFilter)&&(!q||(k.name+' '+k.nr).toLowerCase().includes(q))).map(k=>{const ex=d.material.find(x=>x.nr===k.nr);return {name:k.name,meta:k.nr+' · '+k.einheit+(ex?' · '+fmt(ex.menge)+' '+k.einheit+' im Rapport':''),btn:ex?'+1':'+',...this.chip(!!ex),add:()=>this.addKat(k)};});
+    const stepsDone=STEPS.slice(0,6).map(x=>!this.validate(x[0]));
+    const summ={auftrag:[d.auftrag,d.kunde].filter(Boolean).join(' · ')||'Keine Auftragsdaten',arbeiten:d.arbeiten?d.arbeiten.slice(0,70)+(d.arbeiten.length>70?' …':''):'Noch keine Beschreibung',material:d.material.length?d.material.length+' Positionen':'Optional · noch nichts erfasst',stunden:d.stunden.length+' Mitarbeiter · '+fmtStd(sum)+' Std',fotos:d.fotos.length?d.fotos.length+' Fotos':'Optional · keine Fotos',unterschrift:[d.sigAG?'Auftraggeber ✓':(d.agAbwesend?'Auftraggeber abwesend':'Auftraggeber fehlt'),d.sigAN?'Auftragnehmer ✓':'Auftragnehmer fehlt'].join(' · ')};
+    const optional={material:1,fotos:1};
+    const fotoRows=d.fotos.map((f,n)=>({src:f.src,hasSrc:!!f.src,noSrc:!f.src,label:'Foto '+(n+1),zeit:f.zeit,remove:()=>this.setData({fotos:d.fotos.filter(x=>x.id!==f.id)})}));
+    return {
+      d,on,sbBg:scr==='scan'?'var(--tiefschwarz)':'var(--weiss)',sbFg:scr==='scan'?'var(--weiss)':'var(--tiefschwarz)',
+      isStart:scr==='start',isScan:scr==='scan',inFlow,isHub,isAssist:v==='assistent',
+      isAuftrag:scr==='auftrag',isArbeiten:scr==='arbeiten',isMaterial:scr==='material',isStunden:scr==='stunden',isFotos:scr==='fotos',isUnterschrift:scr==='unterschrift',isPdf:scr==='pdf',
+      fromScan:s.fromScan,scanFound:s.scanFound,scanText:s.scanFound?'Auftragskarte erkannt. Daten werden übernommen …':'Halten Sie den Barcode der Rapportkarte in den Rahmen.',
+      startScan:()=>this.startScan(),startManual:()=>this.startManual(),goStart:()=>{this.timers.forEach(clearTimeout);this.go('start');},
+      rapporte:s.rapporte,
+      back:()=>this.back(),backLabel:(v==='uebersicht'&&!isHub&&inFlow)?'Übersicht':'Zurück',posBadge:d.pos||d.auftrag||'Neu',
+      progress:STEPS.map((x,n)=>({bg:n<=i?'var(--tiefschwarz)':'var(--linie)'})),
+      eyebrow:isHub?'Rapport · '+stepsDone.filter(Boolean).length+' von 6 erledigt':(v==='assistent'?'Schritt '+(i+1)+' von '+STEPS.length:STEPS[i]?STEPS[i][1]:''),
+      title:isHub?'Übersicht':(STEPS[i]?STEPS[i][2]:''),
+      hubRows:STEPS.slice(0,6).map((x,n)=>({label:x[1],summary:summ[x[0]],status:stepsDone[n]?(x[0]==='auftrag'&&s.fromScan?'Aus Scan':'Erledigt'):(optional[x[0]]?'Optional':'Offen'),variant:stepsDone[n]&&!optional[x[0]]?'kasten':(stepsDone[n]&&optional[x[0]]&&(x[0]==='material'?d.material.length:d.fotos.length)?'kasten':'rahmen'),open:()=>this.go(x[0])})),
+      errAuftrag:s.errors.auftrag,errArbeiten:s.errors.arbeiten,
+      textbausteine:BAUSTEINE.map(t=>({label:t,add:()=>this.setData({arbeiten:(d.arbeiten?d.arbeiten.replace(/\s*$/,'')+(/[.!]$/.test(d.arbeiten.trim())?' ':'. '):'')+t+'.'})})),
+      noMaterial:!d.material.length,
+      matRows:d.material.map(m=>({name:m.name,meta:(m.nr?m.nr+' · ':'')+m.quelle,menge:fmt(m.menge),einheit:m.einheit,inc:()=>this.updMat(m.id,x=>({...x,menge:x.menge+step(x)})),dec:()=>this.updMat(m.id,x=>({...x,menge:Math.max(step(x),x.menge-step(x))})),remove:()=>this.setData({material:d.material.filter(x=>x.id!==m.id)})})),
+      openKatalog:()=>this.setState({sheet:'katalog'}),openManuell:()=>this.setState({sheet:'manuell',man:{bez:'',menge:'1',einheit:'Stk'},errors:{}}),closeSheet:()=>this.setState({sheet:null}),
+      sheetOpen:!!s.sheet,isKatalog:s.sheet==='katalog',isManuell:s.sheet==='manuell',sheetTitle:s.sheet==='manuell'?'Material händisch erfassen':'Materialkatalog',
+      katSuche:s.katSuche,onSuche:e=>this.setState({katSuche:e.target.value}),
+      katChips:KATS.map(c=>({label:c,...this.chip(s.katFilter===c),pick:()=>this.setState({katFilter:c})})),katRows,katEmpty:!katRows.length,
+      man:s.man,errManuell:s.errors.manuell,onManBez:e=>this.setState({man:{...s.man,bez:e.target.value},errors:{}}),onManMenge:e=>this.setState({man:{...s.man,menge:e.target.value}}),
+      einheitOpts:EINH.map(u=>({label:u,...this.chip(s.man.einheit===u),pick:()=>this.setState({man:{...s.man,einheit:u}})})),
+      saveManuell:()=>{if(!s.man.bez.trim())return this.setState({errors:{manuell:'Bitte geben Sie eine Bezeichnung ein.'}});const mg=parseFloat(String(s.man.menge).replace(',','.'))||1;this.setState({sheet:null,data:{...d,material:[...d.material,{id:uid++,nr:'',name:s.man.bez.trim(),einheit:s.man.einheit,menge:mg,quelle:'Händisch'}]}});},
+      stdRows:d.stunden.map(r=>({name:r.name,datum:r.datum,std:fmtStd(r.std),canRemove:d.stunden.length>1,
+        onName:e=>this.updStd(r.id,{name:e.target.value}),onDatum:e=>this.updStd(r.id,{datum:e.target.value}),
+        qOpts:[['M','Meister'],['F','Facharb.'],['H','Helfer']].map(([k,l])=>({label:l,...this.chip(r.q===k),pick:()=>this.updStd(r.id,{q:k})})),
+        artOpts:['Werkstatt','Montage','Intern'].map(a=>({label:a,...this.chip(r.art===a),pick:()=>this.updStd(r.id,{art:a})})),
+        inc:()=>this.updStd(r.id,{std:Math.min(16,r.std+0.5)}),dec:()=>this.updStd(r.id,{std:Math.max(0,r.std-0.5)}),remove:()=>this.setData({stunden:d.stunden.filter(x=>x.id!==r.id)})})),
+      addStd:()=>this.setData({stunden:[...d.stunden,{id:uid++,name:'',q:'H',datum:'20.10.2026',art:d.stunden[0]?d.stunden[0].art:'Montage',std:0}]}),
+      sumStd:fmtStd(sum)+' Std',
+      fileRef:this.fileRef,pickFoto:()=>this.fileRef.current&&this.fileRef.current.click(),
+      onFiles:e=>{const now=new Date(),z=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');const add=[...e.target.files].map(f=>({id:uid++,zeit:z,src:URL.createObjectURL(f)}));this.setData({fotos:[...d.fotos,...add]});e.target.value='';},
+      fotoRows,hasFotos:d.fotos.length>0,fotoCount:d.fotos.length,fotoHint:d.fotos.length?d.fotos.length+' Fotos · werden dem Rapport als Anhang beigefügt.':'Optional. Fotos werden dem Rapport als Anhang beigefügt.',
+      refAG:this.refAG,refAN:this.refAN,clearAG:()=>this.clearPad('sigAG'),clearAN:()=>this.clearPad('sigAN'),
+      toggleAbwesend:val=>{this.setData({agAbwesend:val});this.setState({bandErr:null});},agHint:'20.10.2026, '+(d.kunde||'Auftraggeber'),anName:(d.stunden[0]&&d.stunden[0].name)||'Auftragnehmer',
+      hasSigAG:!!d.sigAG&&!d.agAbwesend,hasSigAN:!!d.sigAN,
+      rapportNr:'R-'+(d.pos||d.auftrag||'0000')+'-1',pdfName:'Rapport_'+(d.pos||d.auftrag||'neu')+'_2026-10-20.pdf',
+      pdfMat:d.material.map(m=>({menge:fmt(m.menge),einheit:m.einheit,name:m.name})),
+      pdfStd:d.stunden.filter(r=>r.name||r.std).map(r=>({name:r.name,q:r.q,datum:r.datum.slice(0,6),art:r.art,std:fmtStd(r.std)})),
+      share:()=>this.share(),
+      pdfInfo:'A4 · '+(d.fotos.length?'2 Seiten inkl. Fotos':'1 Seite'),
+      bars:(()=>{const out=[];('*'+String(d.pos||'').toUpperCase().replace(/[^0-9A-Z-]/g,'')+'*').split('').forEach(ch=>{P39[ch].split('').forEach((m,k)=>out.push({w:m==='w'?1.8:0.72,c:k%2===0?'var(--tiefschwarz)':'transparent'}));out.push({w:0.72,c:'transparent'});});return out;})(),
+      primary:()=>this.primary(),primaryLabel:s.busy?'PDF wird erstellt …':scr==='pdf'?'Rapport senden':isHub?'Rapport erzeugen':(v==='uebersicht'?'Übernehmen':(i===5?'Rapport erzeugen':'Weiter')),
+      hasBandErr:!!s.bandErr,bandErr:s.bandErr,
+      toast:s.toast,toastTitle:s.toastTitle||'Rapport gesendet',toastText:s.toastText||'',toastTone:s.toastTone||'info',hideToast:()=>this.setState({toast:false})
+    };
+  }
+}
+</script>
+</body>
+</html>
