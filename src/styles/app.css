@@ -178,3 +178,33 @@ button:focus-visible, [role='checkbox']:focus-visible, [role='button']:focus-vis
   cursor: pointer;
 }
 .foto-btn:hover { background: var(--blau-hell); }
+
+/* Zahlenfeld (Materialmenge, Kilometer) */
+.zahl-feld {
+  width: 92px;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--tiefschwarz);
+  border-radius: 2px;
+  background: var(--weiss);
+  color: var(--tiefschwarz);
+  font: 700 20px/1 var(--font-sans);
+  text-align: right;
+}
+.zahl-feld:focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Link-Schaltfläche Google Maps (Kontur) */
+.maps-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border: 2px solid var(--tiefschwarz);
+  border-radius: 2px;
+  background: var(--weiss);
+  color: var(--tiefschwarz);
+  font: 600 16px/1 var(--font-sans);
+  text-decoration: none;
+}
+.maps-btn:hover { background: var(--blau-hell); color: var(--tiefschwarz); }

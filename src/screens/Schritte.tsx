@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Camera, ImagePlus, Undo2 } from 'lucide-react';
+import { Camera, ImagePlus, MapPinned, Undo2 } from 'lucide-react';
 import { Badge, Button, Checkbox, FieldError, Input } from '../ds';
 import { Chip } from '../ui';
-import { deDate, fmt, fmtHM, fmtStd, uhrzeit, uid } from '../lib/format';
+import { deDate, fmt, fmtHM, fmtStd, parseZahl, uhrzeit, uid } from '../lib/format';
+import { WERKSTATT_ADRESSE } from '../data/firma';
 import { blobToCanvas } from '../lib/ocr';
 import { summeStd } from '../lib/pdf';
 import { MIN_FOTOS, type Errors, type FeldFehler } from '../lib/pruefung';
@@ -31,7 +32,7 @@ function useVerlauf() {
 /** Schnellknöpfe (+1 / +5 … oder +15 min …) und Rückgängig in einer Reihe. */
 function Schnellwahl({ schritte, onAdd, onUndo, kannUndo, label }: { schritte: [string, number][]; onAdd: (n: number) => void; onUndo: () => void; kannUndo: boolean; label: string }) {
   return (
-    <div className="schnell" role="group" aria-label={label}>
+    <div className="schnell" role="group" aria-label={label} style={{ gridTemplateColumns: `repeat(${schritte.length}, minmax(0, 1fr)) 52px` }}>
       {schritte.map(([t, n]) => (
         <button key={t} type="button" onClick={() => onAdd(n)}>
           {t}
@@ -76,7 +77,7 @@ export function AuftragStep({ d, set, errors, clearError }: { d: Rapport; set: S
       </div>
       <div className="grid-nr">
         <Input label="Position" required autoCapitalize="characters" {...f('pos')} />
-        <Input label="Beschreibung" {...f('posText')} />
+        <Input label="Bezeichnung" {...f('posText')} />
       </div>
     </div>
   );
@@ -112,8 +113,41 @@ export function ArbeitenStep({ d, set, errors, clearError }: { d: Rapport; set: 
   );
 }
 
+/** Zahl per Tastatur (Komma erlaubt). Übernimmt beim Verlassen des Feldes oder mit Enter. */
+function ZahlFeld({ value, einheit, onCommit, label, error }: { value: number; einheit: string; onCommit: (n: number) => void; label: string; error?: boolean }) {
+  const [txt, setTxt] = useState<string | null>(null);
+  const uebernehmen = () => {
+    if (txt === null) return;
+    const n = txt.trim() === '' ? 0 : parseZahl(txt);
+    if (Number.isFinite(n) && n >= 0 && n !== value) onCommit(Math.round(n * 100) / 100);
+    setTxt(null);
+  };
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+      <input
+        aria-label={label}
+        inputMode="decimal"
+        enterKeyHint="done"
+        value={txt ?? fmt(value)}
+        onFocus={(e) => {
+          setTxt(value ? fmt(value) : '');
+          requestAnimationFrame(() => e.target.select());
+        }}
+        onChange={(e) => setTxt(e.target.value.replace(/[^\d.,]/g, ''))}
+        onBlur={uebernehmen}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        className="zahl-feld"
+        aria-invalid={error}
+        style={error ? { borderBottom: '4px solid var(--signalrot)' } : undefined}
+      />
+      <span style={{ fontSize: 14, minWidth: 28 }}>{einheit}</span>
+    </label>
+  );
+}
+
 // ---------- 3 · Material ----------
 const MENGE_SCHRITTE: [string, number][] = [
+  ['+0,25', 0.25],
   ['+1', 1],
   ['+5', 5],
   ['+10', 10],
@@ -139,16 +173,24 @@ export function MaterialStep({ d, setFn, clearBand, onKatalog, onManuell }: { d:
       )}
       {d.material.map((m: MaterialPos) => (
         <div key={m.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--linie)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span className="titel" style={{ fontSize: 16, lineHeight: '22px', fontWeight: 700, overflowWrap: 'anywhere' }}>
                 {m.name}
               </span>
               <span className="klein-grau">{(m.nr ? m.nr + ' · ' : '') + m.quelle}</span>
             </div>
-            <span style={{ fontSize: 22, lineHeight: '28px', fontWeight: 700, whiteSpace: 'nowrap' }} aria-live="polite">
-              {fmt(m.menge)} <span style={{ fontSize: 14, fontWeight: 400 }}>{m.einheit}</span>
-            </span>
+            <ZahlFeld
+              label={'Menge ' + m.name}
+              value={m.menge}
+              einheit={m.einheit}
+              error={!(m.menge > 0)}
+              onCommit={(n) => {
+                verlauf.merke(m.id, m.menge);
+                setMenge(m.id, n);
+                clearBand();
+              }}
+            />
             <button
               className="x-btn"
               aria-label={m.name + ' entfernen'}
@@ -159,11 +201,12 @@ export function MaterialStep({ d, setFn, clearBand, onKatalog, onManuell }: { d:
             </button>
           </div>
           <Schnellwahl
-            label={'Menge ' + m.name}
+            label={'Mengenknöpfe ' + m.name}
             schritte={MENGE_SCHRITTE}
             onAdd={(n) => {
               verlauf.merke(m.id, m.menge);
-              setMenge(m.id, m.menge + n);
+              setMenge(m.id, Math.round((m.menge + n) * 100) / 100);
+              clearBand();
             }}
             onUndo={() => {
               const alt = verlauf.zurueck(m.id);
@@ -191,7 +234,7 @@ const QUALI: [Qualifikation, string][] = [
   ['F', 'Facharb.'],
   ['H', 'Helfer'],
 ];
-const ARTEN: Art[] = ['Werkstatt', 'Montage', 'Intern'];
+const ARTEN: Art[] = ['Werkstatt', 'Montage'];
 const ZEIT_SCHRITTE: [string, number][] = [
   ['+15 min', 0.25],
   ['+30 min', 0.5],
@@ -226,7 +269,7 @@ export function StundenStep({ d, setFn, clearBand }: { d: Rapport; setFn: SetFn;
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span className="feld-titel">Art</span>
-            <div className="grid-3">
+            <div className="grid-2" style={{ gap: 8 }}>
               {ARTEN.map((a) => (
                 <Chip key={a} on={r.art === a} onClick={() => upd(r.id, { art: a })}>
                   {a}
@@ -278,7 +321,86 @@ export function StundenStep({ d, setFn, clearBand }: { d: Rapport; setFn: SetFn;
   );
 }
 
-// ---------- 5 · Fotos ----------
+// ---------- 5 · Fahrt ----------
+export function FahrtStep({ d, setFn, errors, clearError, clearBand }: { d: Rapport; setFn: SetFn; errors: Errors; clearError: (k: FeldFehler) => void; clearBand: () => void }) {
+  const verlauf = useVerlauf();
+  const zeit = d.fahrzeit ?? 0;
+  const ziel = [d.strasse, d.ort].filter((x) => x.trim()).join(', ');
+  // Öffnet Google Maps nur auf Knopfdruck (Adresse geht dann an Google). Die App selbst fragt nichts ab.
+  const mapsUrl = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' + encodeURIComponent(WERKSTATT_ADRESSE) + '&destination=' + encodeURIComponent(ziel);
+  const setZeit = (n: number) => {
+    setFn(() => ({ fahrzeit: n }));
+    clearBand();
+  };
+  return (
+    <div style={{ ...pad16, gap: 20 }}>
+      <div className="klein-grau">An- und Abfahrt gesamt (Hin- und Rückfahrt), zusätzlich zur Arbeitszeit vor Ort.</div>
+      <div style={{ opacity: d.keineFahrt ? 0.4 : 1, pointerEvents: d.keineFahrt ? 'none' : undefined, display: 'flex', flexDirection: 'column', gap: 20 }} aria-disabled={d.keineFahrt}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+            <span className="feld-titel">Fahrzeit *</span>
+            <span aria-live="polite" style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span className="klein-grau">{fmtHM(zeit)}</span>
+              <span style={{ fontSize: 22, lineHeight: '28px', fontWeight: 700 }}>{fmtStd(zeit)} Std</span>
+            </span>
+          </div>
+          <Schnellwahl
+            label="Fahrzeit"
+            schritte={ZEIT_SCHRITTE}
+            onAdd={(n) => {
+              verlauf.merke('fahrt', zeit);
+              setZeit(Math.min(MAX_STD, zeit + n));
+            }}
+            onUndo={() => {
+              const alt = verlauf.zurueck('fahrt');
+              if (alt !== undefined) setZeit(alt);
+            }}
+            kannUndo={verlauf.kann('fahrt')}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span className="feld-titel">Kilometer *</span>
+            <ZahlFeld
+              label="Kilometer"
+              value={d.fahrKm ?? 0}
+              einheit="km"
+              error={!!errors.km}
+              onCommit={(n) => {
+                setFn(() => ({ fahrKm: n }));
+                clearError('km');
+                clearBand();
+              }}
+            />
+          </div>
+          {errors.km && <FieldError>{errors.km}</FieldError>}
+        </div>
+        {ziel && (
+          <div style={{ background: 'var(--blau-hell)', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <a className="maps-btn" href={mapsUrl} target="_blank" rel="noopener noreferrer">
+              <MapPinned size={20} strokeWidth={2} aria-hidden />
+              Route in Google Maps ansehen
+            </a>
+            <span className="klein-grau" style={{ color: 'var(--tiefschwarz)' }}>
+              Werkstatt → {ziel}. Maps zeigt eine Strecke: Zeit und km für Hin- und Rückfahrt verdoppeln. Beim Öffnen wird die Kundenadresse an Google übermittelt.
+            </span>
+          </div>
+        )}
+      </div>
+      <Checkbox
+        label="Keine Fahrt (z. B. Arbeit in der Werkstatt)"
+        checked={!!d.keineFahrt}
+        onChange={(v) => {
+          setFn(() => ({ keineFahrt: v }));
+          clearError('km');
+          clearBand();
+        }}
+      />
+    </div>
+  );
+}
+
+// ---------- 6 · Fotos ----------
 export function FotosStep({ d, setFn, errors, clearBand, onFehler }: { d: Rapport; setFn: SetFn; errors: Errors; clearBand: () => void; onFehler: (t: string) => void }) {
   const kameraRef = useRef<HTMLInputElement>(null);
   const galerieRef = useRef<HTMLInputElement>(null);
@@ -346,7 +468,7 @@ export function FotosStep({ d, setFn, errors, clearBand, onFehler }: { d: Rappor
   );
 }
 
-// ---------- 6 · Unterschrift ----------
+// ---------- 7 · Unterschrift ----------
 function SignaturPad({ value, onChange, label }: { value: string | null; onChange: (v: string | null) => void; label: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const changeRef = useRef(onChange);

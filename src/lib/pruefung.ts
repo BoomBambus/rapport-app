@@ -1,7 +1,7 @@
 // Pflichtangaben je Schritt. Ohne sie geht es nicht zum nächsten Schritt.
 import type { Rapport } from './types';
 
-export type FeldFehler = 'kunde' | 'strasse' | 'ort' | 'auftrag' | 'pos' | 'arbeiten' | 'fotos';
+export type FeldFehler = 'kunde' | 'strasse' | 'ort' | 'auftrag' | 'pos' | 'arbeiten' | 'fotos' | 'km';
 export type Errors = Partial<Record<FeldFehler, string>>;
 export type Pruefung = { errors?: Errors; bandErr?: string } | null;
 
@@ -23,7 +23,15 @@ export function pruefe(id: string, d: Rapport): Pruefung {
     return Object.keys(e).length ? { errors: e } : null;
   }
   if (id === 'arbeiten' && !d.arbeiten.trim()) return { errors: { arbeiten: 'Bitte beschreiben Sie die ausgeführten Arbeiten.' } };
-  if (id === 'material' && !d.material.length && !d.keinMaterial) return { bandErr: 'Bitte Material erfassen oder „Kein Material benötigt“ wählen.' };
+  if (id === 'material') {
+    if (!d.material.length && !d.keinMaterial) return { bandErr: 'Bitte Material erfassen oder „Kein Material benötigt“ wählen.' };
+    const ohne = d.material.find((m) => !(m.menge > 0));
+    if (ohne) return { bandErr: `Bitte eine Menge eingeben: „${ohne.name}“ steht auf 0.` };
+  }
+  if (id === 'fahrt' && !d.keineFahrt) {
+    if (!(d.fahrzeit && d.fahrzeit > 0)) return { bandErr: 'Bitte die Fahrzeit erfassen oder „Keine Fahrt“ wählen.' };
+    if (!(d.fahrKm && d.fahrKm > 0)) return { errors: { km: 'Bitte die gefahrenen Kilometer eingeben.' } };
+  }
   if (id === 'stunden' && !d.stunden.some((r) => r.name.trim() && r.std > 0)) return { bandErr: 'Bitte erfassen Sie mindestens einen Mitarbeiter mit Stunden.' };
   if (id === 'fotos') {
     if (d.fotos.length < MIN_FOTOS) return { bandErr: `Bitte mindestens ${MIN_FOTOS} Fotos aufnehmen (bisher ${d.fotos.length}).` };

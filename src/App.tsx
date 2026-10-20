@@ -9,7 +9,7 @@ import type { Auftragsdaten, GesendeterRapport, Profil, Rapport } from './lib/ty
 import { pruefe, type Errors } from './lib/pruefung';
 import { Start } from './screens/Start';
 import { Scan } from './screens/Scan';
-import { AuftragStep, ArbeitenStep, MaterialStep, StundenStep, FotosStep, UnterschriftStep } from './screens/Schritte';
+import { AuftragStep, ArbeitenStep, MaterialStep, StundenStep, FahrtStep, FotosStep, UnterschriftStep } from './screens/Schritte';
 import { PdfVorschau } from './screens/PdfVorschau';
 import { KatalogSheet, ManuellSheet, ProfilSheet, Sheet } from './screens/Sheets';
 
@@ -18,6 +18,7 @@ export const STEPS = [
   ['arbeiten', 'Arbeiten', 'Ausgeführte Arbeiten'],
   ['material', 'Material', 'Verwendetes Material'],
   ['stunden', 'Stunden', 'Arbeitszeit erfassen'],
+  ['fahrt', 'Fahrt', 'Fahrzeit erfassen'],
   ['fotos', 'Fotos', 'Fotodokumentation'],
   ['unterschrift', 'Unterschrift', 'Abnahme vor Ort'],
   ['pdf', 'Rapport', 'Rapport prüfen'],
@@ -41,6 +42,9 @@ function neuerRapport(base: Partial<Auftragsdaten>, profil: Profil, fromScan: bo
     bemerkungen: '',
     material: [],
     keinMaterial: false,
+    fahrzeit: 0,
+    fahrKm: 0,
+    keineFahrt: false,
     stunden: [{ id: uid(), name: profil.name, q: profil.q, datum: deDate(datum), art: 'Montage', std: 0 }],
     fotos: [],
     sigAG: null,
@@ -193,7 +197,7 @@ export default function App() {
   if (!geladen) return <div className="app" />;
 
   const heute = isoDate();
-  const primaryLabel = busy ? 'PDF wird erstellt …' : screen === 'pdf' ? 'Rapport senden' : stepIdx === 5 ? 'Rapport erzeugen' : 'Weiter';
+  const primaryLabel = busy ? 'PDF wird erstellt …' : screen === 'pdf' ? 'Rapport senden' : STEPS[stepIdx + 1]?.[0] === 'pdf' ? 'Rapport erzeugen' : 'Weiter';
 
   return (
     <div className={'app' + (screen === 'scan' ? ' dunkel' : '')}>
@@ -259,6 +263,7 @@ export default function App() {
               <MaterialStep d={d} setFn={setFn} clearBand={() => setBandErr(null)} onKatalog={() => setSheet('katalog')} onManuell={() => setSheet('manuell')} />
             )}
             {screen === 'stunden' && <StundenStep d={d} setFn={setFn} clearBand={() => setBandErr(null)} />}
+            {screen === 'fahrt' && <FahrtStep d={d} setFn={setFn} errors={errors} clearError={clearError} clearBand={() => setBandErr(null)} />}
             {screen === 'fotos' && (
               <FotosStep
                 d={d}

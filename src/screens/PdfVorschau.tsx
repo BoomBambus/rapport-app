@@ -1,14 +1,49 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Logo } from '../ds';
 import { code39Bars } from '../lib/code39';
-import { deDate, fmt, fmtStd } from '../lib/format';
+import { deDate, fmt, fmtHM, fmtStd } from '../lib/format';
 import { FUSSZEILE, rapportNr, stundenZeilen, summeStd } from '../lib/pdf';
 import type { Rapport } from '../lib/types';
 
 // HTML-Vorschau der ersten PDF-Seite (595 px = A4-Breite in pt), auf Bildschirmbreite skaliert.
 const cell: CSSProperties = { padding: '3px 0' };
-const MAT_COLS = '40px 36px 1fr';
-const STD_COLS = '1fr 18px 58px 52px 28px';
+// Spalten wie im PDF (515 px Satzbreite)
+const MAT_COLS = '46px 52px 64px 1fr';
+const STD_COLS = '1fr 64px 80px 90px 44px';
+const FAHRT_COLS = '1fr 160px 90px';
+
+function Tabelle({ titel, cols, kopf, zeilen, rechts = [], summe }: { titel: string; cols: string; kopf: string[]; zeilen: string[][]; rechts?: number[]; summe?: [string, string] }) {
+  const zelle = (i: number, extra?: CSSProperties): CSSProperties => ({ ...cell, paddingRight: 6, textAlign: rechts.includes(i) ? 'right' : 'left', ...extra });
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <span style={{ fontWeight: 700, letterSpacing: '.3em', paddingBottom: 4 }}>{titel}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, borderTop: '1px solid var(--tiefschwarz)' }}>
+        {kopf.map((k, i) => (
+          <span key={k} style={zelle(i, { fontWeight: 700 })}>
+            {k}
+          </span>
+        ))}
+      </div>
+      {zeilen.map((z, n) => (
+        <div key={n} style={{ display: 'grid', gridTemplateColumns: cols, borderTop: '1px solid var(--linie)' }}>
+          {z.map((v, i) => (
+            <span key={i} style={zelle(i)}>
+              {v}
+            </span>
+          ))}
+        </div>
+      ))}
+      <div style={{ borderTop: '1px solid var(--tiefschwarz)', display: 'flex', justifyContent: 'space-between', fontWeight: 700, padding: summe ? '3px 0' : 0 }}>
+        {summe && (
+          <>
+            <span>{summe[0]}</span>
+            <span>{summe[1]}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: string }) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -74,7 +109,7 @@ export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: s
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 120px', borderTop: '1px solid var(--tiefschwarz)', borderBottom: '1px solid var(--tiefschwarz)' }}>
             <span style={{ padding: '4px 0', fontWeight: 700 }}>Pos</span>
-            <span style={{ padding: '4px 0', fontWeight: 700 }}>Beschreibung / Menge</span>
+            <span style={{ padding: '4px 0', fontWeight: 700 }}>Bezeichnung</span>
             <span style={{ padding: '4px 0', fontWeight: 700 }}>Barcode</span>
             <span style={{ padding: '4px 0', borderTop: '1px solid var(--linie)' }}>{d.pos}</span>
             <span style={{ padding: '4px 0', borderTop: '1px solid var(--linie)' }}>{d.posText}</span>
@@ -99,53 +134,31 @@ export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: s
             <span style={{ fontWeight: 700 }}>Bemerkungen:</span>
             <span style={{ minHeight: 28, whiteSpace: 'pre-wrap' }}>{d.bemerkungen}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontWeight: 700, letterSpacing: '.3em', paddingBottom: 4 }}>MATERIAL</span>
-              <div style={{ display: 'grid', gridTemplateColumns: MAT_COLS, borderTop: '1px solid var(--tiefschwarz)' }}>
-                <span style={{ ...cell, fontWeight: 700 }}>Menge</span>
-                <span style={{ ...cell, fontWeight: 700 }}>Einh.</span>
-                <span style={{ ...cell, fontWeight: 700 }}>Bezeichnung</span>
-              </div>
-              {!d.material.length && d.keinMaterial && (
-                <div style={{ borderTop: '1px solid var(--linie)', ...cell }}>Kein Material benötigt</div>
-              )}
-              {d.material.map((m) => (
-                <div key={m.id} style={{ display: 'grid', gridTemplateColumns: MAT_COLS, borderTop: '1px solid var(--linie)' }}>
-                  <span style={cell}>{fmt(m.menge)}</span>
-                  <span style={cell}>{m.einheit}</span>
-                  <span style={cell}>{m.name}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontWeight: 700, letterSpacing: '.3em', paddingBottom: 4 }}>STUNDEN</span>
-              <div style={{ display: 'grid', gridTemplateColumns: STD_COLS, borderTop: '1px solid var(--tiefschwarz)' }}>
-                <span style={{ ...cell, fontWeight: 700 }}>Name</span>
-                <span style={{ ...cell, fontWeight: 700 }}>*</span>
-                <span style={{ ...cell, fontWeight: 700 }}>Datum</span>
-                <span style={{ ...cell, fontWeight: 700 }}>Art</span>
-                <span style={{ ...cell, fontWeight: 700, textAlign: 'right' }}>Std</span>
-              </div>
-              {std.map((r) => (
-                <div key={r.id} style={{ display: 'grid', gridTemplateColumns: STD_COLS, borderTop: '1px solid var(--linie)' }}>
-                  <span style={cell}>{r.name}</span>
-                  <span style={cell}>{r.q}</span>
-                  <span style={cell}>{r.datum.slice(0, 6)}</span>
-                  <span style={cell}>{r.art}</span>
-                  <span style={{ ...cell, textAlign: 'right' }}>{fmtStd(r.std)}</span>
-                </div>
-              ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--tiefschwarz)', padding: '3px 0', fontWeight: 700 }}>
-                <span>Summe</span>
-                <span>{fmtStd(summeStd(d))} Std</span>
-              </div>
-              <span style={{ fontSize: 8, lineHeight: '11px' }}>
-                reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit)
-                <br />* M = Meister, F = Facharbeiter, H = Helfer
-              </span>
-            </div>
+          <Tabelle
+            titel="MATERIAL"
+            cols={MAT_COLS}
+            kopf={['Menge', 'Einheit', 'Art.-Nr.', 'Bezeichnung']}
+            rechts={[0]}
+            zeilen={d.material.length ? d.material.map((m) => [fmt(m.menge), m.einheit, m.nr || '–', m.name]) : [['', '', '', d.keinMaterial ? 'Kein Material benötigt' : '']]}
+          />
+          <div>
+            <Tabelle
+              titel="STUNDEN"
+              cols={STD_COLS}
+              kopf={['Name', 'Qualif.*', 'Datum', 'Art', 'Std']}
+              rechts={[4]}
+              zeilen={std.map((r) => [r.name, r.q, r.datum, r.art, fmtStd(r.std)])}
+              summe={['Summe Arbeitszeit', fmtStd(summeStd(d)) + ' Std']}
+            />
+            <span style={{ fontSize: 8, lineHeight: '11px' }}>Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit) · * M = Meister, F = Facharbeiter, H = Helfer</span>
           </div>
+          <Tabelle
+            titel="FAHRT"
+            cols={FAHRT_COLS}
+            kopf={['Hin- und Rückfahrt', 'Fahrzeit', 'Kilometer']}
+            rechts={[2]}
+            zeilen={[d.keineFahrt ? ['Keine Fahrt', '–', '–'] : ['Werkstatt – Kunde – Werkstatt', `${fmtStd(d.fahrzeit ?? 0)} Std (${fmtHM(d.fahrzeit ?? 0)})`, fmt(d.fahrKm ?? 0) + ' km']]}
+          />
           {nFotos > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ fontWeight: 700 }}>Fotodokumentation ({nFotos}) · Anhang</span>

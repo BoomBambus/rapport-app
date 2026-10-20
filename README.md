@@ -24,13 +24,14 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = PDF erneut teilen), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
 2. **Scan**: Die Kamera sucht laufend den Code-39-Barcode der Rapportkarte. Wird er gefunden, wird ein Standbild per Texterkennung gelesen. Ohne Barcode (die Beispielkarte hat noch keinen): **„Karte lesen“** tippen. Ohne Kamera: Karte fotografieren oder ein Foto aus der Galerie wählen.
-3. Sieben Schritte mit Fortschrittsbalken. „Weiter“ geht erst, wenn die Pflichtangaben stimmen (`src/lib/pruefung.ts`):
+3. Acht Schritte mit Fortschrittsbalken. „Weiter“ geht erst, wenn die Pflichtangaben stimmen (`src/lib/pruefung.ts`):
    - **1 Auftrag:** Kunde, Straße mit Hausnummer, PLZ und Ort (4–5-stellige PLZ, auch CH/A), Auftrag, Position.
    - **2 Arbeiten:** Beschreibung der ausgeführten Arbeiten.
-   - **3 Material:** mindestens eine Position oder „Kein Material benötigt“. Menge über +1 / +5 / +10 mit Rückgängig, exakte Kommawerte über „Händisch“.
-   - **4 Stunden:** mindestens ein Mitarbeiter mit Zeit. Zeit über +15 min / +30 min / +1 h mit Rückgängig.
-   - **5 Fotos:** mindestens 2 Fotos, jedes mit Bezeichnung (Kamera oder Galerie).
-   - **6 Unterschrift:** Auftragnehmer, und Auftraggeber oder „nicht anwesend“.
+   - **3 Material:** mindestens eine Position oder „Kein Material benötigt“. Neue Positionen starten mit Menge 0. Die Menge lässt sich per Tastatur eingeben (Komma erlaubt) oder über +0,25 / +1 / +5 / +10, mit Rückgängig. Keine Position darf auf 0 stehen.
+   - **4 Stunden:** mindestens ein Mitarbeiter mit Zeit. Zeit über +15 min / +30 min / +1 h mit Rückgängig. Art: Werkstatt oder Montage.
+   - **5 Fahrt:** Fahrzeit (+15 min / +30 min / +1 h, Rückgängig) und Kilometer, jeweils Hin- und Rückfahrt, oder „Keine Fahrt“. Der Knopf „Route in Google Maps ansehen“ öffnet die Route Werkstatt → Kunde. Erst durch dieses Antippen geht die Kundenadresse an Google; die App selbst fragt nichts ab.
+   - **6 Fotos:** mindestens 2 Fotos, jedes mit Bezeichnung (Kamera oder Galerie).
+   - **7 Unterschrift:** Auftragnehmer, und Auftraggeber oder „nicht anwesend“.
 4. **Rapport senden** erzeugt das PDF und öffnet auf dem Handy das Teilen-Menü (Mail, Messenger, Drive …). Am PC wird es heruntergeladen. Danach steht der Rapport unter „Heute“.
 
 ## Kartenerkennung
@@ -43,7 +44,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 ## PDF
 
-`src/lib/pdf.ts` (jsPDF), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, Material und Stunden nebeneinander, Summe, Legende M/F/H, beide Unterschriften. Fotos kommen als Anhang auf eigene Seiten. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
+`src/lib/pdf.ts` (jsPDF), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, dann untereinander die Tabellen Material, Stunden (mit Summe und Legende M/F/H) und Fahrt, beide Unterschriften. Fotos kommen als Anhang auf eigene Seiten. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
 
 ## Datenschutz und Offline-Betrieb
 

@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Input } from '../ds';
 import { Chip } from '../ui';
 import { EINHEITEN, KATALOG, KATEGORIEN, type Artikel } from '../data/katalog';
-import { fmt, parseZahl, uid } from '../lib/format';
+import { parseZahl, uid } from '../lib/format';
 import type { MaterialPos, Profil, Qualifikation, Rapport } from '../lib/types';
 
 /** Untere Ebene mit Overlay, rotem Strich und Titel. */
@@ -38,9 +38,8 @@ export function KatalogSheet({ d, setFn, onManuell, onFertig }: { d: Rapport; se
     setFn((r) => {
       const ex = r.material.find((x) => x.nr === k.nr);
       return {
-        material: ex
-          ? r.material.map((x) => (x === ex ? { ...x, menge: x.menge + 1 } : x))
-          : [...r.material, { id: uid(), nr: k.nr, name: k.name, einheit: k.einheit, menge: 1, quelle: 'Katalog' }],
+        // Startmenge immer 0 – die Menge wird im Schritt eingetragen. Doppelt wird nichts angelegt.
+        material: ex ? r.material : [...r.material, { id: uid(), nr: k.nr, name: k.name, einheit: k.einheit, menge: 0, quelle: 'Katalog' }],
       };
     });
   return (
@@ -64,7 +63,7 @@ export function KatalogSheet({ d, setFn, onManuell, onFertig }: { d: Rapport; se
                 <span style={{ fontSize: 16, lineHeight: '22px', fontWeight: 600 }}>{k.name}</span>
                 <span className="klein-grau">
                   {k.nr} · {k.einheit}
-                  {ex && ` · ${fmt(ex.menge)} ${k.einheit} im Rapport`}
+                  {ex && ' · im Rapport'}
                 </span>
               </div>
               <button
@@ -74,7 +73,7 @@ export function KatalogSheet({ d, setFn, onManuell, onFertig }: { d: Rapport; se
                 onClick={() => add(k)}
                 style={{ flex: 'none', minWidth: 44, padding: '0 10px', borderWidth: 2 }}
               >
-                {ex ? '+1' : '+'}
+                {ex ? '✓' : '+'}
               </button>
             </div>
           );
@@ -95,7 +94,7 @@ export function KatalogSheet({ d, setFn, onManuell, onFertig }: { d: Rapport; se
 
 export function ManuellSheet({ onSave }: { onSave: (m: MaterialPos) => void }) {
   const [bez, setBez] = useState('');
-  const [menge, setMenge] = useState('1');
+  const [menge, setMenge] = useState('0');
   const [einheit, setEinheit] = useState('Stk');
   const [err, setErr] = useState<string | undefined>();
   return (
@@ -128,7 +127,7 @@ export function ManuellSheet({ onSave }: { onSave: (m: MaterialPos) => void }) {
         onClick={() => {
           if (!bez.trim()) return setErr('Bitte geben Sie eine Bezeichnung ein.');
           const mg = parseZahl(menge);
-          onSave({ id: uid(), nr: '', name: bez.trim(), einheit, menge: mg > 0 ? mg : 1, quelle: 'Händisch' });
+          onSave({ id: uid(), nr: '', name: bez.trim(), einheit, menge: mg > 0 ? Math.round(mg * 100) / 100 : 0, quelle: 'Händisch' });
         }}
       >
         Übernehmen

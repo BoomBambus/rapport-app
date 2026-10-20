@@ -2,7 +2,7 @@
 import type { jsPDF as JsPDFType } from 'jspdf';
 import { LOGO_SRC } from '../ds';
 import { code39Bars, code39Units } from './code39';
-import { deDate, fmt, fmtStd } from './format';
+import { deDate, fmt, fmtHM, fmtStd } from './format';
 import type { Rapport } from './types';
 
 export const FUSSZEILE = 'Schlosserei Menge · Weiherstr. 12 · 78465 Konstanz-Dettingen · zertifiziert nach EN 1090';
@@ -111,7 +111,7 @@ export async function buildPdf(d: Rapport, lfd = 1): Promise<{ blob: Blob; name:
   rule(y, true);
   bold();
   doc.text('Pos', L, y + 5);
-  doc.text('Beschreibung / Menge', 52, y + 5);
+  doc.text('Bezeichnung', 52, y + 5);
   doc.text('Barcode', 140, y + 5);
   rule(y + 7.5, false);
   norm();
@@ -143,67 +143,83 @@ export async function buildPdf(d: Rapport, lfd = 1): Promise<{ blob: Blob; name:
   block('Ausgeführte Arbeiten:', d.arbeiten, 3);
   block('Bemerkungen:', d.bemerkungen, 2);
 
-  // Material | Stunden nebeneinander
-  y += 10;
-  ensure(20);
-  const hdr = () => {
-    doc.setFontSize(10);
-    bold();
-    doc.text('MATERIAL', L, y, { charSpace: 1 });
-    doc.text('STUNDEN', 110, y, { charSpace: 1 });
-    y += 3;
-    rule(y, true, L, 102);
-    rule(y, true, 110, R);
-    doc.setFontSize(8.5);
-    doc.text('Menge', L, y + 4.5);
-    doc.text('Einh.', L + 15, y + 4.5);
-    doc.text('Bezeichnung', L + 27, y + 4.5);
-    doc.text('Name', 110, y + 4.5);
-    doc.text('*', 141, y + 4.5);
-    doc.text('Datum', 146, y + 4.5);
-    doc.text('Art', 163, y + 4.5);
-    doc.text('Std', R, y + 4.5, { align: 'right' });
-    y += 6.5;
-    norm();
+  // Tabellen untereinander in voller Breite: Material, Stunden, Fahrt
+  type Spalte = { t: string; x: number; rechts?: boolean; w?: number };
+  const tabelle = (titel: string, spalten: Spalte[], zeilen: string[][], summe?: [string, string]) => {
+    const kopf = () => {
+      doc.setFontSize(10);
+      bold();
+      doc.text(titel, L, y, { charSpace: 1 });
+      y += 3;
+      rule(y, true);
+      doc.setFontSize(8.5);
+      for (const c of spalten) doc.text(c.t, c.x, y + 4.5, c.rechts ? { align: 'right' } : undefined);
+      y += 6.5;
+      norm();
+    };
+    y += 9;
+    ensure(22);
+    kopf();
+    for (const z of zeilen) {
+      const umbruch = spalten.map((c, i) => (c.w ? (doc.splitTextToSize(z[i] ?? '', c.w) as string[]) : [z[i] ?? '']));
+      const h = Math.max(...umbruch.map((u) => u.length)) * 3.8 + 2.2;
+      if (ensure(h + 2)) kopf();
+      rule(y, false);
+      spalten.forEach((c, i) => doc.text(umbruch[i], c.x, y + 4, c.rechts ? { align: 'right' } : undefined));
+      y += h;
+    }
+    rule(y, true);
+    if (summe) {
+      bold();
+      doc.text(summe[0], L, y + 4.5);
+      doc.text(summe[1], R, y + 4.5, { align: 'right' });
+      norm();
+      y += 6.5;
+    }
   };
-  hdr();
+
   const mat = d.material;
+  tabelle(
+    'MATERIAL',
+    [
+      { t: 'Menge', x: L + 16, rechts: true },
+      { t: 'Einheit', x: L + 20 },
+      { t: 'Art.-Nr.', x: L + 38 },
+      { t: 'Bezeichnung', x: L + 60, w: R - L - 60 },
+    ],
+    mat.length ? mat.map((m) => [fmt(m.menge), m.einheit, m.nr || '–', m.name]) : [['', '', '', d.keinMaterial ? 'Kein Material benötigt' : '']],
+  );
+
   const std = stundenZeilen(d);
-  const n = Math.max(mat.length, std.length, 3);
-  for (let k = 0; k < n; k++) {
-    const m = mat[k];
-    const r = std[k];
-    const ml = m ? (doc.splitTextToSize(m.name, 57) as string[]) : [];
-    const h = Math.max(1, ml.length) * 3.8 + 2;
-    if (ensure(h + 2)) hdr();
-    rule(y, false, L, 102);
-    rule(y, false, 110, R);
-    if (k === 0 && !mat.length && d.keinMaterial) doc.text('Kein Material benötigt', L, y + 4);
-    if (m) {
-      doc.text(fmt(m.menge), L, y + 4);
-      doc.text(m.einheit, L + 15, y + 4);
-      doc.text(ml, L + 27, y + 4);
-    }
-    if (r) {
-      doc.text((doc.splitTextToSize(r.name, 30) as string[])[0] || '', 110, y + 4);
-      doc.text(r.q, 141, y + 4);
-      doc.text(r.datum.slice(0, 6), 146, y + 4);
-      doc.text(r.art, 163, y + 4);
-      doc.text(fmtStd(r.std), R, y + 4, { align: 'right' });
-    }
-    y += h;
-  }
-  rule(y, true, L, 102);
-  rule(y, true, 110, R);
-  bold();
-  doc.text('Summe', 110, y + 4.5);
-  doc.text(fmtStd(summeStd(d)) + ' Std', R, y + 4.5, { align: 'right' });
-  norm();
+  tabelle(
+    'STUNDEN',
+    [
+      { t: 'Name', x: L, w: 66 },
+      { t: 'Qualif.*', x: L + 70 },
+      { t: 'Datum', x: L + 92 },
+      { t: 'Art', x: L + 120 },
+      { t: 'Std', x: R, rechts: true },
+    ],
+    std.map((r) => [r.name, r.q, r.datum, r.art, fmtStd(r.std)]),
+    ['Summe Arbeitszeit', fmtStd(summeStd(d)) + ' Std'],
+  );
   doc.setFontSize(7.5);
-  doc.text('reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit)', 110, y + 9);
-  doc.text('* M = Meister, F = Facharbeiter, H = Helfer', 110, y + 12.5);
-  if (d.fotos.length) doc.text('Fotodokumentation: ' + d.fotos.length + (d.fotos.length === 1 ? ' Foto' : ' Fotos') + ' im Anhang', L, y + 9);
-  y += 14;
+  doc.text('Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit) · * M = Meister, F = Facharbeiter, H = Helfer', L, y + 1.5);
+  y += 2;
+
+  tabelle(
+    'FAHRT',
+    [
+      { t: 'Hin- und Rückfahrt', x: L },
+      { t: 'Fahrzeit', x: L + 92 },
+      { t: 'Kilometer', x: R, rechts: true },
+    ],
+    [d.keineFahrt ? ['Keine Fahrt', '–', '–'] : ['Werkstatt – Kunde – Werkstatt', fmtStd(d.fahrzeit ?? 0) + ' Std (' + fmtHM(d.fahrzeit ?? 0) + ')', fmt(d.fahrKm ?? 0) + ' km']],
+  );
+
+  doc.setFontSize(7.5);
+  if (d.fotos.length) doc.text('Fotodokumentation: ' + d.fotos.length + (d.fotos.length === 1 ? ' Foto' : ' Fotos') + ' im Anhang', L, y + 4);
+  y += 8;
   doc.setFontSize(9);
 
   // Unterschriften unten auf der Seite

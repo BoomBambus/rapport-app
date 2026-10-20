@@ -52,6 +52,12 @@ export interface Rapport extends Auftragsdaten {
   /** Ausdrücklich bestätigt: kein Material verbraucht */
   keinMaterial?: boolean;
   stunden: StundenPos[];
+  /** Fahrzeit gesamt (Hin + Rück) in Stunden */
+  fahrzeit?: number;
+  /** Gefahrene Kilometer gesamt (Hin + Rück) */
+  fahrKm?: number;
+  /** Ausdrücklich bestätigt: keine Fahrt (z. B. Arbeit in der Werkstatt) */
+  keineFahrt?: boolean;
   fotos: Foto[];
   sigAG: string | null;
   sigAN: string | null;

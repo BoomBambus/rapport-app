@@ -6,7 +6,7 @@
 //             | …)          0621 / 4829-310
 //   Projekt: …
 //   Auftrag: A26333         Testauftrag
-//   Pos | Beschreibung / Menge | Barcode
+//   Pos | Bezeichnung | Barcode
 //   A26333-01  Rapportposition Test
 //
 // Gearbeitet wird mit Wort-Rahmen (x/y), damit die schmale Kundenname-Spalte und die

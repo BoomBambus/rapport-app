@@ -30,7 +30,19 @@ describe('Schritt 3 · Material', () => {
     expect(pruefe('material', mit({ material: [{ id: 'm', nr: '', name: 'Rohr', einheit: 'm', menge: 1, quelle: 'Händisch' }] }))).toBeNull());
 });
 
-describe('Schritt 5 · Fotos', () => {
+describe('Schritt 3 · Materialmenge', () => {
+  it('Menge 0 → Fehler', () =>
+    expect(pruefe('material', mit({ material: [{ id: 'm', nr: '', name: 'Rohr', einheit: 'm', menge: 0, quelle: 'Händisch' }] }))?.bandErr).toMatch(/Rohr/));
+});
+
+describe('Schritt 5 · Fahrt', () => {
+  it('nichts erfasst → Fehler', () => expect(pruefe('fahrt', basis)?.bandErr).toMatch(/Fahrzeit/));
+  it('Zeit ohne km → Fehler am km-Feld', () => expect(pruefe('fahrt', mit({ fahrzeit: 0.5 }))?.errors?.km).toBeTruthy());
+  it('Zeit und km → weiter', () => expect(pruefe('fahrt', mit({ fahrzeit: 0.5, fahrKm: 24 }))).toBeNull());
+  it('„Keine Fahrt“ → weiter', () => expect(pruefe('fahrt', mit({ keineFahrt: true }))).toBeNull());
+});
+
+describe('Schritt 6 · Fotos', () => {
   const foto = (name?: string) => ({ id: Math.random().toString(), name, zeit: '10:00', src: 'data:' });
   it('weniger als 2 → Fehler', () => expect(pruefe('fotos', mit({ fotos: [foto('A')] }))?.bandErr).toMatch(/mindestens 2/));
   it('unbenannt → Fehler', () => expect(pruefe('fotos', mit({ fotos: [foto('A'), foto(' ')] }))?.errors?.fotos).toBeTruthy());
