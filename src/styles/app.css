@@ -140,3 +140,41 @@ button:focus-visible, [role='checkbox']:focus-visible, [role='button']:focus-vis
   body { padding: 24px 0; }
   .app { height: calc(100dvh - 48px); border: 1px solid var(--linie); }
 }
+
+/* Schnellknöpfe (+1/+5/+10, +15 min/+30 min/+1 h) mit Rückgängig */
+.schnell { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 52px; gap: 8px; }
+.schnell button {
+  appearance: none;
+  height: 48px;
+  border: 2px solid var(--tiefschwarz);
+  border-radius: 2px;
+  background: var(--weiss);
+  color: var(--tiefschwarz);
+  font: 600 16px/1 var(--font-sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.schnell button:hover:not(:disabled) { background: var(--blau-hell); }
+.schnell button:active:not(:disabled) { transform: translateY(1px); }
+.schnell button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Foto aufnehmen / aus Galerie */
+.foto-btn {
+  appearance: none;
+  height: 72px;
+  border: 2px dashed var(--tiefschwarz);
+  border-radius: 2px;
+  background: var(--weiss);
+  color: var(--tiefschwarz);
+  font: 600 14px/18px var(--font-sans);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.foto-btn:hover { background: var(--blau-hell); }

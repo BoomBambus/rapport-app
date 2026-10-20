@@ -107,6 +107,9 @@ export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: s
                 <span style={{ ...cell, fontWeight: 700 }}>Einh.</span>
                 <span style={{ ...cell, fontWeight: 700 }}>Bezeichnung</span>
               </div>
+              {!d.material.length && d.keinMaterial && (
+                <div style={{ borderTop: '1px solid var(--linie)', ...cell }}>Kein Material benötigt</div>
+              )}
               {d.material.map((m) => (
                 <div key={m.id} style={{ display: 'grid', gridTemplateColumns: MAT_COLS, borderTop: '1px solid var(--linie)' }}>
                   <span style={cell}>{fmt(m.menge)}</span>
@@ -148,8 +151,11 @@ export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: s
               <span style={{ fontWeight: 700 }}>Fotodokumentation ({nFotos}) · Anhang</span>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {d.fotos.map((f) => (
-                  <div key={f.id} style={{ width: 84, height: 56, background: 'var(--blau-hell)', overflow: 'hidden' }}>
-                    <img src={f.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div key={f.id} style={{ width: 84, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div style={{ width: 84, height: 56, background: 'var(--blau-hell)', overflow: 'hidden' }}>
+                      <img src={f.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <span style={{ fontSize: 8, lineHeight: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
                   </div>
                 ))}
               </div>

@@ -35,6 +35,8 @@ export interface StundenPos {
 
 export interface Foto {
   id: string;
+  /** Bezeichnung (Pflicht), z. B. „Pfosten unten links“ */
+  name?: string;
   zeit: string; // HH:MM
   src: string; // JPEG-Data-URL, verkleinert
 }
@@ -47,6 +49,8 @@ export interface Rapport extends Auftragsdaten {
   arbeiten: string;
   bemerkungen: string;
   material: MaterialPos[];
+  /** Ausdrücklich bestätigt: kein Material verbraucht */
+  keinMaterial?: boolean;
   stunden: StundenPos[];
   fotos: Foto[];
   sigAG: string | null;

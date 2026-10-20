@@ -1,7 +1,14 @@
 /** Menge mit deutschem Komma, max. 2 Nachkommastellen. */
 export const fmt = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
-/** Stunden immer mit einer Nachkommastelle: 6,5 */
-export const fmtStd = (n: number) => n.toFixed(1).replace('.', ',');
+/** Stunden dezimal, Viertelstunden genau: 6,0 · 6,25 · 6,5 · 6,75 */
+export const fmtStd = (n: number) => (Math.round(n * 4) % 2 ? n.toFixed(2) : n.toFixed(1)).replace('.', ',');
+/** 6.25 → „6 h 15 min“ */
+export const fmtHM = (n: number) => {
+  const min = Math.round(n * 60);
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return (h ? h + ' h' : '') + (h && m ? ' ' : '') + (m || !h ? m + ' min' : '');
+};
 
 const pad = (n: number) => String(n).padStart(2, '0');
 

@@ -24,7 +24,13 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = PDF erneut teilen), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
 2. **Scan**: Die Kamera sucht laufend den Code-39-Barcode der Rapportkarte. Wird er gefunden, wird ein Standbild per Texterkennung gelesen. Ohne Barcode (die Beispielkarte hat noch keinen): **„Karte lesen“** tippen. Ohne Kamera: Karte fotografieren oder ein Foto aus der Galerie wählen.
-3. Sieben Schritte mit Fortschrittsbalken: Auftrag → Arbeiten → Material → Stunden → Fotos → Unterschrift → Rapport prüfen. Pflichtangaben werden vor „Weiter“ geprüft.
+3. Sieben Schritte mit Fortschrittsbalken. „Weiter“ geht erst, wenn die Pflichtangaben stimmen (`src/lib/pruefung.ts`):
+   - **1 Auftrag:** Kunde, Straße mit Hausnummer, PLZ und Ort (4–5-stellige PLZ, auch CH/A), Auftrag, Position.
+   - **2 Arbeiten:** Beschreibung der ausgeführten Arbeiten.
+   - **3 Material:** mindestens eine Position oder „Kein Material benötigt“. Menge über +1 / +5 / +10 mit Rückgängig, exakte Kommawerte über „Händisch“.
+   - **4 Stunden:** mindestens ein Mitarbeiter mit Zeit. Zeit über +15 min / +30 min / +1 h mit Rückgängig.
+   - **5 Fotos:** mindestens 2 Fotos, jedes mit Bezeichnung (Kamera oder Galerie).
+   - **6 Unterschrift:** Auftragnehmer, und Auftraggeber oder „nicht anwesend“.
 4. **Rapport senden** erzeugt das PDF und öffnet auf dem Handy das Teilen-Menü (Mail, Messenger, Drive …). Am PC wird es heruntergeladen. Danach steht der Rapport unter „Heute“.
 
 ## Kartenerkennung
@@ -51,6 +57,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 - **Materialstamm**: `src/data/katalog.ts` enthält Beispieldaten. Den echten Stamm dort eintragen (Nr., Bezeichnung, Einheit, Kategorie).
 - **Barcode auf der Karte**: Die Beispielkarte hat ein leeres Barcode-Feld. Die Erkennung läuft dann nur per Text. Mit Barcode ist die Position sicherer.
+- Gegenüber dem Entwurf geändert: Textbausteine in Schritt 2 entfernt, Plus/Minus durch Schnellknöpfe mit Rückgängig ersetzt, Fotos mit Bezeichnung und als Pflicht.
 - Gegenüber dem Entwurf ergänzt: Entwurf fortsetzen/verwerfen, Profil (Name, Qualifikation, Standort) statt fest „J. Keller“, Auslöser „Karte lesen“ und Galerie-Auswahl im Scan, „Heute“-Einträge erneut teilen, echtes Datum statt 20.10.2026.
 - Weggelassen: Variante 1b „Übersicht“ (nicht gewählt) und die Spalte „Gehen“ (laut Chat entfallen).
 

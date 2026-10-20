@@ -178,6 +178,7 @@ export async function buildPdf(d: Rapport, lfd = 1): Promise<{ blob: Blob; name:
     if (ensure(h + 2)) hdr();
     rule(y, false, L, 102);
     rule(y, false, 110, R);
+    if (k === 0 && !mat.length && d.keinMaterial) doc.text('Kein Material benötigt', L, y + 4);
     if (m) {
       doc.text(fmt(m.menge), L, y + 4);
       doc.text(m.einheit, L + 15, y + 4);
@@ -250,7 +251,8 @@ export async function buildPdf(d: Rapport, lfd = 1): Promise<{ blob: Blob; name:
         doc.rect(x, y, fw, fh, 'F');
       }
       doc.setFontSize(8);
-      doc.text('Foto ' + (k + 1) + ' · ' + datum + ', ' + f.zeit, x, y + fh + 4);
+      const cap = ['Foto ' + (k + 1), f.name?.trim(), datum + ', ' + f.zeit].filter(Boolean).join(' · ');
+      doc.text((doc.splitTextToSize(cap, fw) as string[])[0], x, y + fh + 4);
     }
   }
 

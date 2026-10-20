@@ -25,4 +25,3 @@ export const KATALOG: Artikel[] = [
 
 export const KATEGORIEN = ['Alle', 'Profile', 'Rohre', 'Bleche', 'Befestigung', 'Verbrauch'];
 export const EINHEITEN = ['Stk', 'm', 'm²', 'kg', 'l', 'Psch'];
-export const TEXTBAUSTEINE = ['Montage vor Ort', 'Aufmaß genommen', 'Schweißarbeiten', 'Nacharbeit / Reparatur'];

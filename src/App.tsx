@@ -6,6 +6,7 @@ import { isoDate, deDate, uid } from './lib/format';
 import { buildPdf, dateiname, teilenOderSpeichern } from './lib/pdf';
 import { loadEntwurf, loadGesendet, loadProfil, saveEntwurf, saveGesendet, saveProfil } from './lib/storage';
 import type { Auftragsdaten, GesendeterRapport, Profil, Rapport } from './lib/types';
+import { pruefe, type Errors } from './lib/pruefung';
 import { Start } from './screens/Start';
 import { Scan } from './screens/Scan';
 import { AuftragStep, ArbeitenStep, MaterialStep, StundenStep, FotosStep, UnterschriftStep } from './screens/Schritte';
@@ -24,7 +25,6 @@ export const STEPS = [
 export type StepId = (typeof STEPS)[number][0];
 type Screen = 'start' | 'scan' | StepId;
 type SheetId = 'katalog' | 'manuell' | 'profil' | null;
-export type Errors = Partial<Record<'auftrag' | 'arbeiten', string>>;
 
 const LEER: Auftragsdaten = { kundeNr: '', kunde: '', strasse: '', ort: '', tel: '', projekt: '', auftrag: '', auftragText: '', pos: '', posText: '' };
 const PROFIL_LEER: Profil = { name: '', q: 'F', standort: 'Werkstatt Dettingen' };
@@ -40,23 +40,13 @@ function neuerRapport(base: Partial<Auftragsdaten>, profil: Profil, fromScan: bo
     arbeiten: '',
     bemerkungen: '',
     material: [],
+    keinMaterial: false,
     stunden: [{ id: uid(), name: profil.name, q: profil.q, datum: deDate(datum), art: 'Montage', std: 0 }],
     fotos: [],
     sigAG: null,
     sigAN: null,
     agAbwesend: false,
   };
-}
-
-function validate(id: StepId, d: Rapport): { errors?: Errors; bandErr?: string } | null {
-  if (id === 'auftrag' && !d.auftrag.trim()) return { errors: { auftrag: 'Bitte geben Sie die Auftragsnummer ein.' } };
-  if (id === 'arbeiten' && !d.arbeiten.trim()) return { errors: { arbeiten: 'Bitte beschreiben Sie die ausgeführten Arbeiten.' } };
-  if (id === 'stunden' && !d.stunden.some((r) => r.name.trim() && r.std > 0)) return { bandErr: 'Bitte erfassen Sie mindestens einen Mitarbeiter mit Stunden.' };
-  if (id === 'unterschrift') {
-    if (!d.sigAN) return { bandErr: 'Bitte unterschreiben Sie als Auftragnehmer.' };
-    if (!d.sigAG && !d.agAbwesend) return { bandErr: 'Unterschrift des Auftraggebers fehlt – oder „nicht anwesend“ wählen.' };
-  }
-  return null;
 }
 
 /** Laufende Nummer: wievielter Rapport zu dieser Position (aus den gesendeten der letzten Tage). */
@@ -110,6 +100,15 @@ export default function App() {
     window.addEventListener('offline-bereit', ok);
     return () => window.removeEventListener('offline-bereit', ok);
   }, [flash]);
+
+  const clearError = useCallback((k: keyof Errors) => {
+    setErrors((e) => {
+      if (!e[k]) return e;
+      const n = { ...e };
+      delete n[k];
+      return n;
+    });
+  }, []);
 
   const set = useCallback((p: Partial<Rapport>) => setD((s) => (s ? { ...s, ...p } : s)), []);
   const setFn = useCallback((fn: (r: Rapport) => Partial<Rapport>) => setD((s) => (s ? { ...s, ...fn(s) } : s)), []);
@@ -172,7 +171,7 @@ export default function App() {
   const primary = () => {
     if (!d) return;
     if (screen === 'pdf') return senden();
-    const err = validate(screen as StepId, d);
+    const err = pruefe(screen, d);
     if (err) {
       setErrors(err.errors ?? {});
       setBandErr(err.bandErr ?? null);
@@ -254,11 +253,21 @@ export default function App() {
           </div>
 
           <div className="scroll" ref={scrollRef}>
-            {screen === 'auftrag' && <AuftragStep d={d} set={set} errors={errors} clearErrors={() => setErrors({})} />}
-            {screen === 'arbeiten' && <ArbeitenStep d={d} set={set} errors={errors} clearErrors={() => setErrors({})} />}
-            {screen === 'material' && <MaterialStep d={d} setFn={setFn} onKatalog={() => setSheet('katalog')} onManuell={() => setSheet('manuell')} />}
+            {screen === 'auftrag' && <AuftragStep d={d} set={set} errors={errors} clearError={clearError} />}
+            {screen === 'arbeiten' && <ArbeitenStep d={d} set={set} errors={errors} clearError={clearError} />}
+            {screen === 'material' && (
+              <MaterialStep d={d} setFn={setFn} clearBand={() => setBandErr(null)} onKatalog={() => setSheet('katalog')} onManuell={() => setSheet('manuell')} />
+            )}
             {screen === 'stunden' && <StundenStep d={d} setFn={setFn} clearBand={() => setBandErr(null)} />}
-            {screen === 'fotos' && <FotosStep d={d} setFn={setFn} onFehler={(t) => flash('Foto konnte nicht geladen werden', t, 'fehler')} />}
+            {screen === 'fotos' && (
+              <FotosStep
+                d={d}
+                setFn={setFn}
+                errors={errors}
+                clearBand={() => setBandErr(null)}
+                onFehler={(t) => flash('Foto konnte nicht geladen werden', t, 'fehler')}
+              />
+            )}
             {screen === 'unterschrift' && <UnterschriftStep d={d} set={set} clearBand={() => setBandErr(null)} />}
             {screen === 'pdf' && <PdfVorschau d={d} lfd={lfdNr(d, gesendet)} name={dateiname(d)} />}
           </div>
@@ -283,14 +292,23 @@ export default function App() {
 
       {sheet === 'katalog' && d && (
         <Sheet title="Materialkatalog" onClose={() => setSheet(null)}>
-          <KatalogSheet d={d} setFn={setFn} onManuell={() => setSheet('manuell')} onFertig={() => setSheet(null)} />
+          <KatalogSheet
+            d={d}
+            setFn={(fn) => {
+              setFn((r) => ({ ...fn(r), keinMaterial: false }));
+              setBandErr(null);
+            }}
+            onManuell={() => setSheet('manuell')}
+            onFertig={() => setSheet(null)}
+          />
         </Sheet>
       )}
       {sheet === 'manuell' && d && (
         <Sheet title="Material händisch erfassen" onClose={() => setSheet(null)}>
           <ManuellSheet
             onSave={(m) => {
-              setFn((r) => ({ material: [...r.material, m] }));
+              setFn((r) => ({ material: [...r.material, m], keinMaterial: false }));
+              setBandErr(null);
               setSheet(null);
             }}
           />

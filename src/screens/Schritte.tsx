@@ -1,26 +1,57 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Camera } from 'lucide-react';
-import { Badge, Button, Checkbox, Input } from '../ds';
-import { Chip, Stepper } from '../ui';
-import { TEXTBAUSTEINE } from '../data/katalog';
-import { deDate, fmt, fmtStd, uhrzeit, uid } from '../lib/format';
+import { Camera, ImagePlus, Undo2 } from 'lucide-react';
+import { Badge, Button, Checkbox, FieldError, Input } from '../ds';
+import { Chip } from '../ui';
+import { deDate, fmt, fmtHM, fmtStd, uhrzeit, uid } from '../lib/format';
 import { blobToCanvas } from '../lib/ocr';
 import { summeStd } from '../lib/pdf';
+import { MIN_FOTOS, type Errors, type FeldFehler } from '../lib/pruefung';
 import type { Art, Auftragsdaten, MaterialPos, Qualifikation, Rapport, StundenPos } from '../lib/types';
-import type { Errors } from '../App';
 
 type Set = (p: Partial<Rapport>) => void;
 type SetFn = (fn: (r: Rapport) => Partial<Rapport>) => void;
 
 const pad16 = { padding: 16, display: 'flex', flexDirection: 'column' as const };
 
+/** Rückgängig-Verlauf je Eintrag (Material-Zeile, Mitarbeiter): vorherige Werte als Stapel. */
+function useVerlauf() {
+  const [st, setSt] = useState<Record<string, number[]>>({});
+  return {
+    merke: (id: string, alt: number) => setSt((s) => ({ ...s, [id]: [...(s[id] ?? []), alt] })),
+    zurueck: (id: string): number | undefined => {
+      const stack = st[id];
+      if (!stack?.length) return undefined;
+      setSt((s) => ({ ...s, [id]: stack.slice(0, -1) }));
+      return stack[stack.length - 1];
+    },
+    kann: (id: string) => !!st[id]?.length,
+  };
+}
+
+/** Schnellknöpfe (+1 / +5 … oder +15 min …) und Rückgängig in einer Reihe. */
+function Schnellwahl({ schritte, onAdd, onUndo, kannUndo, label }: { schritte: [string, number][]; onAdd: (n: number) => void; onUndo: () => void; kannUndo: boolean; label: string }) {
+  return (
+    <div className="schnell" role="group" aria-label={label}>
+      {schritte.map(([t, n]) => (
+        <button key={t} type="button" onClick={() => onAdd(n)}>
+          {t}
+        </button>
+      ))}
+      <button type="button" onClick={onUndo} disabled={!kannUndo} aria-label="Rückgängig" title="Rückgängig">
+        <Undo2 size={20} strokeWidth={2} aria-hidden />
+      </button>
+    </div>
+  );
+}
+
 // ---------- 1 · Auftrag ----------
-export function AuftragStep({ d, set, errors, clearErrors }: { d: Rapport; set: Set; errors: Errors; clearErrors: () => void }) {
+export function AuftragStep({ d, set, errors, clearError }: { d: Rapport; set: Set; errors: Errors; clearError: (k: FeldFehler) => void }) {
   const f = (k: keyof Auftragsdaten) => ({
     value: d[k],
+    error: errors[k as FeldFehler],
     onValue: (v: string) => {
       set({ [k]: v });
-      if (errors.auftrag && k === 'auftrag') clearErrors();
+      clearError(k as FeldFehler);
     },
   });
   return (
@@ -33,20 +64,18 @@ export function AuftragStep({ d, set, errors, clearErrors }: { d: Rapport; set: 
       )}
       <div className="grid-nr">
         <Input label="Kunden-Nr." inputMode="numeric" {...f('kundeNr')} />
-        <Input label="Kunde" {...f('kunde')} />
+        <Input label="Kunde" required {...f('kunde')} />
       </div>
-      <Input label="Straße" {...f('strasse')} />
-      <div className="grid-2">
-        <Input label="PLZ, Ort" {...f('ort')} />
-        <Input label="Telefon" type="tel" {...f('tel')} />
-      </div>
+      <Input label="Straße und Hausnummer" required placeholder="z. B. Weiherstr. 12" {...f('strasse')} />
+      <Input label="PLZ, Ort" required placeholder="z. B. 78465 Konstanz" {...f('ort')} />
+      <Input label="Telefon" type="tel" placeholder="optional" {...f('tel')} />
       <Input label="Projekt" placeholder="optional" {...f('projekt')} />
       <div className="grid-nr">
-        <Input label="Auftrag" required error={errors.auftrag} autoCapitalize="characters" {...f('auftrag')} />
+        <Input label="Auftrag" required autoCapitalize="characters" {...f('auftrag')} />
         <Input label="Bezeichnung" {...f('auftragText')} />
       </div>
       <div className="grid-nr">
-        <Input label="Position" autoCapitalize="characters" {...f('pos')} />
+        <Input label="Position" required autoCapitalize="characters" {...f('pos')} />
         <Input label="Beschreibung" {...f('posText')} />
       </div>
     </div>
@@ -54,34 +83,22 @@ export function AuftragStep({ d, set, errors, clearErrors }: { d: Rapport; set: 
 }
 
 // ---------- 2 · Arbeiten ----------
-export function ArbeitenStep({ d, set, errors, clearErrors }: { d: Rapport; set: Set; errors: Errors; clearErrors: () => void }) {
-  const baustein = (t: string) => {
-    const a = d.arbeiten;
-    set({ arbeiten: (a ? a.replace(/\s*$/, '') + (/[.!]$/.test(a.trim()) ? ' ' : '. ') : '') + t + '.' });
-    if (errors.arbeiten) clearErrors();
-  };
+export function ArbeitenStep({ d, set, errors, clearError }: { d: Rapport; set: Set; errors: Errors; clearError: (k: FeldFehler) => void }) {
   return (
     <div style={{ ...pad16, gap: 24 }}>
       <Input
         label="Ausgeführte Arbeiten"
         required
         multiline
-        rows={7}
+        rows={8}
         placeholder="Was wurde heute gemacht?"
         value={d.arbeiten}
         onValue={(v) => {
           set({ arbeiten: v });
-          if (errors.arbeiten) clearErrors();
+          clearError('arbeiten');
         }}
         error={errors.arbeiten}
       />
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {TEXTBAUSTEINE.map((t) => (
-          <button key={t} type="button" className="baustein" onClick={() => baustein(t)}>
-            + {t}
-          </button>
-        ))}
-      </div>
       <Input
         label="Bemerkungen"
         multiline
@@ -96,38 +113,64 @@ export function ArbeitenStep({ d, set, errors, clearErrors }: { d: Rapport; set:
 }
 
 // ---------- 3 · Material ----------
-const schritt = (m: MaterialPos) => (m.einheit === 'Stk' || m.einheit === 'Psch' ? 1 : 0.5);
+const MENGE_SCHRITTE: [string, number][] = [
+  ['+1', 1],
+  ['+5', 5],
+  ['+10', 10],
+];
 
-export function MaterialStep({ d, setFn, onKatalog, onManuell }: { d: Rapport; setFn: SetFn; onKatalog: () => void; onManuell: () => void }) {
-  const upd = (id: string, fn: (m: MaterialPos) => MaterialPos) => setFn((r) => ({ material: r.material.map((x) => (x.id === id ? fn(x) : x)) }));
+export function MaterialStep({ d, setFn, clearBand, onKatalog, onManuell }: { d: Rapport; setFn: SetFn; clearBand: () => void; onKatalog: () => void; onManuell: () => void }) {
+  const verlauf = useVerlauf();
+  const setMenge = (id: string, menge: number) => setFn((r) => ({ material: r.material.map((x) => (x.id === id ? { ...x, menge } : x)) }));
   return (
     <div style={{ padding: '8px 16px 16px', display: 'flex', flexDirection: 'column' }}>
       {!d.material.length && (
-        <div style={{ padding: '24px 16px', background: 'var(--blau-hell)', marginTop: 8, fontSize: 16, lineHeight: '24px' }}>
-          Noch kein Material erfasst. Wählen Sie aus dem Katalog oder erfassen Sie eine Position von Hand.
+        <div style={{ padding: '16px', background: 'var(--blau-hell)', marginTop: 8, display: 'flex', flexDirection: 'column', gap: 12, fontSize: 16, lineHeight: '24px' }}>
+          <span>Noch kein Material erfasst. Wählen Sie aus dem Katalog oder erfassen Sie eine Position von Hand.</span>
+          <Checkbox
+            label="Kein Material benötigt"
+            checked={!!d.keinMaterial}
+            onChange={(v) => {
+              setFn(() => ({ keinMaterial: v }));
+              clearBand();
+            }}
+          />
         </div>
       )}
-      {d.material.map((m) => (
-        <div key={m.id} className="zeile">
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span className="titel">{m.name}</span>
-            <span className="meta">{(m.nr ? m.nr + ' · ' : '') + m.quelle}</span>
+      {d.material.map((m: MaterialPos) => (
+        <div key={m.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--linie)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span className="titel" style={{ fontSize: 16, lineHeight: '22px', fontWeight: 700, overflowWrap: 'anywhere' }}>
+                {m.name}
+              </span>
+              <span className="klein-grau">{(m.nr ? m.nr + ' · ' : '') + m.quelle}</span>
+            </div>
+            <span style={{ fontSize: 22, lineHeight: '28px', fontWeight: 700, whiteSpace: 'nowrap' }} aria-live="polite">
+              {fmt(m.menge)} <span style={{ fontSize: 14, fontWeight: 400 }}>{m.einheit}</span>
+            </span>
+            <button
+              className="x-btn"
+              aria-label={m.name + ' entfernen'}
+              style={{ width: 32, height: 28, fontSize: 24 }}
+              onClick={() => setFn((r) => ({ material: r.material.filter((x) => x.id !== m.id) }))}
+            >
+              ×
+            </button>
           </div>
-          <Stepper
+          <Schnellwahl
             label={'Menge ' + m.name}
-            value={fmt(m.menge)}
-            unit={m.einheit}
-            onDec={() => upd(m.id, (x) => ({ ...x, menge: Math.max(schritt(x), x.menge - schritt(x)) }))}
-            onInc={() => upd(m.id, (x) => ({ ...x, menge: x.menge + schritt(x) }))}
+            schritte={MENGE_SCHRITTE}
+            onAdd={(n) => {
+              verlauf.merke(m.id, m.menge);
+              setMenge(m.id, m.menge + n);
+            }}
+            onUndo={() => {
+              const alt = verlauf.zurueck(m.id);
+              if (alt !== undefined) setMenge(m.id, alt);
+            }}
+            kannUndo={verlauf.kann(m.id)}
           />
-          <button
-            className="x-btn"
-            aria-label="entfernen"
-            style={{ width: 32, fontSize: 24 }}
-            onClick={() => setFn((r) => ({ material: r.material.filter((x) => x.id !== m.id) }))}
-          >
-            ×
-          </button>
         </div>
       ))}
       <div className="grid-2" style={{ marginTop: 16 }}>
@@ -149,8 +192,15 @@ const QUALI: [Qualifikation, string][] = [
   ['H', 'Helfer'],
 ];
 const ARTEN: Art[] = ['Werkstatt', 'Montage', 'Intern'];
+const ZEIT_SCHRITTE: [string, number][] = [
+  ['+15 min', 0.25],
+  ['+30 min', 0.5],
+  ['+1 h', 1],
+];
+const MAX_STD = 24;
 
 export function StundenStep({ d, setFn, clearBand }: { d: Rapport; setFn: SetFn; clearBand: () => void }) {
+  const verlauf = useVerlauf();
   const upd = (id: string, p: Partial<StundenPos>) => {
     setFn((r) => ({ stunden: r.stunden.map((x) => (x.id === id ? { ...x, ...p } : x)) }));
     clearBand();
@@ -184,14 +234,26 @@ export function StundenStep({ d, setFn, clearBand }: { d: Rapport; setFn: SetFn;
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span className="feld-titel">Stunden</span>
-            <Stepper
-              gross
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+              <span className="feld-titel">Stunden</span>
+              <span aria-live="polite" style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span className="klein-grau">{fmtHM(r.std)}</span>
+                <span style={{ fontSize: 22, lineHeight: '28px', fontWeight: 700 }}>{fmtStd(r.std)} Std</span>
+              </span>
+            </div>
+            <Schnellwahl
               label={'Stunden ' + (r.name || 'Mitarbeiter')}
-              value={fmtStd(r.std)}
-              onDec={() => upd(r.id, { std: Math.max(0, r.std - 0.5) })}
-              onInc={() => upd(r.id, { std: Math.min(16, r.std + 0.5) })}
+              schritte={ZEIT_SCHRITTE}
+              onAdd={(n) => {
+                verlauf.merke(r.id, r.std);
+                upd(r.id, { std: Math.min(MAX_STD, r.std + n) });
+              }}
+              onUndo={() => {
+                const alt = verlauf.zurueck(r.id);
+                if (alt !== undefined) upd(r.id, { std: alt });
+              }}
+              kannUndo={verlauf.kann(r.id)}
             />
           </div>
           {d.stunden.length > 1 && (
@@ -217,57 +279,69 @@ export function StundenStep({ d, setFn, clearBand }: { d: Rapport; setFn: SetFn;
 }
 
 // ---------- 5 · Fotos ----------
-export function FotosStep({ d, setFn, onFehler }: { d: Rapport; setFn: SetFn; onFehler: (t: string) => void }) {
-  const ref = useRef<HTMLInputElement>(null);
+export function FotosStep({ d, setFn, errors, clearBand, onFehler }: { d: Rapport; setFn: SetFn; errors: Errors; clearBand: () => void; onFehler: (t: string) => void }) {
+  const kameraRef = useRef<HTMLInputElement>(null);
+  const galerieRef = useRef<HTMLInputElement>(null);
   const n = d.fotos.length;
+  const laden = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = [...(e.target.files ?? [])];
+    e.target.value = '';
+    const z = uhrzeit();
+    for (const f of files) {
+      try {
+        // Verkleinern, damit Entwurf und PDF handlich bleiben
+        const src = (await blobToCanvas(f, 1600)).toDataURL('image/jpeg', 0.85);
+        setFn((r) => ({ fotos: [...r.fotos, { id: uid(), name: '', zeit: z, src }] }));
+        clearBand();
+      } catch {
+        onFehler(f.name);
+      }
+    }
+  };
+  const fehlt = Math.max(0, MIN_FOTOS - n);
   return (
     <div style={{ ...pad16, gap: 16 }}>
-      <input
-        ref={ref}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        multiple
-        style={{ display: 'none' }}
-        onChange={async (e) => {
-          const files = [...(e.target.files ?? [])];
-          e.target.value = '';
-          const z = uhrzeit();
-          for (const f of files) {
-            try {
-              // Verkleinern, damit Entwurf und PDF handlich bleiben
-              const src = (await blobToCanvas(f, 1600)).toDataURL('image/jpeg', 0.85);
-              setFn((r) => ({ fotos: [...r.fotos, { id: uid(), zeit: z, src }] }));
-            } catch {
-              onFehler(f.name);
-            }
-          }
-        }}
-      />
-      <div className="grid-3">
-        {d.fotos.map((f, i) => (
-          <div key={f.id} style={{ position: 'relative', aspectRatio: '1', background: 'var(--blau-hell)', overflow: 'hidden' }}>
-            <img src={f.src} alt={'Foto ' + (i + 1)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '2px 6px', background: 'var(--weiss)', fontSize: 12, lineHeight: '16px' }}>{f.zeit}</div>
-            <button
-              aria-label="Foto entfernen"
-              onClick={() => setFn((r) => ({ fotos: r.fotos.filter((x) => x.id !== f.id) }))}
-              style={{ appearance: 'none', position: 'absolute', right: 0, top: 0, width: 32, height: 32, border: 0, background: 'var(--weiss)', font: '400 20px/1 var(--font-sans)', color: 'var(--tiefschwarz)', cursor: 'pointer' }}
-            >
+      <input ref={kameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={laden} />
+      <input ref={galerieRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={laden} />
+      {d.fotos.map((f, i) => {
+        const leer = !f.name?.trim();
+        return (
+          <div key={f.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', paddingBottom: 16, borderBottom: '1px solid var(--linie)' }}>
+            <div style={{ position: 'relative', width: 96, flex: 'none', aspectRatio: '3 / 2', background: 'var(--blau-hell)', overflow: 'hidden', marginTop: 28 }}>
+              <img src={f.src} alt={f.name || 'Foto ' + (i + 1)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Input
+                label={`Foto ${i + 1} · ${f.zeit}`}
+                required
+                placeholder="z. B. Pfosten unten links"
+                value={f.name ?? ''}
+                onValue={(v) => {
+                  setFn((r) => ({ fotos: r.fotos.map((x) => (x.id === f.id ? { ...x, name: v } : x)) }));
+                  clearBand();
+                }}
+              />
+              {errors.fotos && leer && <FieldError>{errors.fotos}</FieldError>}
+            </div>
+            <button className="x-btn" aria-label={'Foto ' + (i + 1) + ' entfernen'} style={{ width: 32, fontSize: 24, marginTop: 28 }} onClick={() => setFn((r) => ({ fotos: r.fotos.filter((x) => x.id !== f.id) }))}>
               ×
             </button>
           </div>
-        ))}
-        <button
-          className="baustein"
-          onClick={() => ref.current?.click()}
-          style={{ aspectRatio: '1', border: '2px dashed var(--tiefschwarz)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, font: '600 14px/18px var(--font-sans)' }}
-        >
-          <Camera size={28} strokeWidth={2} aria-hidden />
-          Foto
+        );
+      })}
+      <div className="grid-2">
+        <button className="foto-btn" onClick={() => kameraRef.current?.click()}>
+          <Camera size={24} strokeWidth={2} aria-hidden />
+          Foto aufnehmen
+        </button>
+        <button className="foto-btn" onClick={() => galerieRef.current?.click()}>
+          <ImagePlus size={24} strokeWidth={2} aria-hidden />
+          Aus Galerie
         </button>
       </div>
-      <div className="klein-grau">{n ? `${n} ${n === 1 ? 'Foto wird' : 'Fotos werden'} dem Rapport als Anhang beigefügt.` : 'Optional. Fotos werden dem Rapport als Anhang beigefügt.'}</div>
+      <div className="klein-grau">
+        {fehlt ? `Mindestens ${MIN_FOTOS} Fotos mit Bezeichnung – noch ${fehlt} ${fehlt === 1 ? 'Foto' : 'Fotos'}.` : `${n} Fotos · werden dem Rapport als Anhang beigefügt.`}
+      </div>
     </div>
   );
 }
