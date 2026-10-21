@@ -30,6 +30,12 @@ const AUFTRAG_RE = /^[A-Z]{1,3}\d{4,}$/;
 const PLZ_RE = /^\d{5}$/;
 const TEL_RE = /^(\+|0)[\d\s/()-]{5,}$/;
 
+/** „LA26333-01“ → „A26333-01“: Präfix „L“ (Laufkarte) vor einer Position mit einem Buchstaben. */
+export const ohneLaufkartenPraefix = (code: string) => {
+  const m = /^L([A-Z]\d{4,}-\d{1,3})$/.exec(code);
+  return m ? m[1] : code;
+};
+
 /** Typische OCR-Verwechslungen in Nummern (nach dem Buchstaben-Präfix) korrigieren. */
 export function fixCode(raw: string): string {
   const t = raw.trim().replace(/[.,;:]+$/, '').toUpperCase();
@@ -97,34 +103,61 @@ function joinWrapped(parts: string[]): string {
 //   Auftrag:     A26333   Testauftrag
 //   Position:    A26333-01   Rapportposition Test
 // Erster Buchstabe darf fehlen – die OCR verschluckt ihn gern, wenn eine Linie nahe davor liegt.
-const FORMULAR: [RegExp, keyof Auftragsdaten][] = [
+const FORMULAR: [RegExp, keyof Auftragsdaten | 'anrede'][] = [
   [/^k?unden\s*-?\s*n[ro]\.?:?$/i, 'kundeNr'],
   [/^k?unde:?$/i, 'kunde'],
+  [/^a?nrede:?$/i, 'anrede'], // wird gelesen, aber nicht übernommen
   [/^s?tra(ß|ss|b)e:?$/i, 'strasse'],
-  [/^p?lz\s*\/?\s*ort:?$/i, 'ort'],
-  [/^t?ele?fon:?$/i, 'tel'],
+  [/^p?lz\s*[,/]?\s*ort:?$/i, 'ort'], // „PLZ / Ort:“ oder „PLZ, Ort:“
+  [/^t?el(efon)?\.?:?$/i, 'tel'], // „Telefon:“ oder „Tel:“
   [/^p?rojekt:?$/i, 'projekt'],
   [/^a?uftrag:?$/i, 'auftrag'],
   [/^p?osition:?$/i, 'pos'],
 ];
+/** Nur Linienzeichen (Tabellenlinien, die die OCR als Zeichen liest) */
+const LINIE_RE = /^[|_—–\-=~.,:;'"`!¦]+$/;
+
+/** Linienzeichen am Anfang/Ende einer Wortgruppe entfernen (in der Mitte bleiben sie, z. B. „Name | Zusatz“). */
+function trimLinien(ws: OcrWord[]): OcrWord[] {
+  let a = 0, b = ws.length;
+  while (a < b && LINIE_RE.test(ws[a].text)) a++;
+  while (b > a && LINIE_RE.test(ws[b - 1].text)) b--;
+  return ws.slice(a, b);
+}
+
 /** Merkmal des neuen Layouts: Beschriftungen, die die alte Karte nicht hat. */
 const NUR_FORMULAR: (keyof Auftragsdaten)[] = ['strasse', 'ort', 'kundeNr'];
 
 function leseFormular(lines: OcrLine[]): Partial<Auftragsdaten> | null {
   const out: Partial<Auftragsdaten> = {};
   let treffer = 0;
+  let wertX: number | null = null; // linker Rand der Wertespalte
+  let ersteY = Infinity; // oberste Beschriftung des Adressblocks
   for (const l of lines) {
-    const ws = [...l.words].sort((a, b) => a.x0 - b.x0);
-    // Beschriftung aus den ersten 1–3 Wörtern („PLZ / Ort:“ sind drei Wörter)
+    // Tabellenlinien werden als „|“, „_“ o. Ä. gelesen – solche Zeichen zählen nicht als Wort
+    const ws = trimLinien([...l.words].sort((a, b) => a.x0 - b.x0));
     for (let n = Math.min(3, ws.length - 1); n >= 1; n--) {
       const label = ws.slice(0, n).map((w) => w.text).join(' ').replace(/^[^\p{L}]+/u, '');
       const f = FORMULAR.find(([re]) => re.test(label));
       if (!f) continue;
       // Wert: erste Wortgruppe nach der Beschriftung (QR-Code o. Ä. rechts daneben fällt weg)
-      const teile = segments(ws.slice(n));
+      const teile = segments(ws.slice(n)).map(trimLinien).filter((t) => t.length);
       if (!teile.length) break;
       const feld = f[1];
+      if (feld === 'anrede') break;
       if (out[feld]) break;
+      if (feld === 'kunde' && /^\(?\d{3,8}\)?$/.test(join(teile[0]))) {
+        // „Kunde: 10868“ – darunter in derselben Spalte der Name: „(Mustermann | …)“
+        if (!out.kundeNr) out.kundeNr = join(teile[0]).replace(/[^\d]/g, '');
+        const wert = teile[0][0];
+        const h = wordH(wert);
+        const darunter = lines
+          .map((z) => z.words.filter((w) => Math.abs(w.x0 - wert.x0) < h * 1.5 || w.x0 > wert.x0))
+          .map((ws2) => segments(ws2.filter((w) => w.x0 >= wert.x0 - h * 1.5))[0] ?? [])
+          .find((ws2) => ws2.length && ws2[0].y0 > wert.y1 && ws2[0].y0 < wert.y1 + h * 1.8 && Math.abs(ws2[0].x0 - wert.x0) < h * 1.5);
+        if (darunter && /\p{L}/u.test(join(darunter))) out.kunde = joinWrapped([join(darunter)]);
+        break;
+      }
       if (feld === 'auftrag' || feld === 'pos') {
         // „A26333   Testauftrag“: Nummer, dann Bezeichnung
         const [nr, ...rest] = teile[0];
@@ -134,11 +167,32 @@ function leseFormular(lines: OcrLine[]): Partial<Auftragsdaten> | null {
       } else {
         out[feld] = join(teile[0]);
       }
-      if (NUR_FORMULAR.includes(feld)) treffer++;
+      if (NUR_FORMULAR.includes(feld as keyof Auftragsdaten)) {
+        treffer++;
+        if (wertX === null) wertX = teile[0][0].x0;
+        ersteY = Math.min(ersteY, ws[0].y0);
+      }
       break;
     }
   }
   if (treffer < 2) return null;
+  // Kartenkopf: „Kunde:  10868 / (Name)“ über dem Adressblock. Die kleine Beschriftung „Kunde:“ geht
+  // im Kamerabild oft verloren – daher über die Wertespalte suchen: Zahl, darunter der Name.
+  if (wertX !== null) {
+    const x = wertX;
+    const inSpalte = lines
+      .map((l) => trimLinien([...l.words].sort((a, b) => a.x0 - b.x0)))
+      .map((ws) => ws.filter((w) => w.x0 > x - wordH(ws[0] ?? w) * 1.5))
+      .filter((ws) => ws.length && Math.abs(ws[0].x0 - x) < wordH(ws[0]) * 1.5 && ws[0].y1 < ersteY)
+      .map((ws) => trimLinien(segments(ws)[0]))
+      .filter((ws) => ws.length);
+    const iNr = inSpalte.findIndex((ws) => /^\(?\d{3,8}\)?$/.test(join(ws)));
+    if (iNr >= 0) {
+      out.kundeNr = join(inSpalte[iNr]).replace(/[^\d]/g, '');
+      const name = inSpalte[iNr + 1];
+      if (name && /\p{L}{2}/u.test(join(name))) out.kunde = joinWrapped([join(name)]);
+    }
+  }
   if (out.kundeNr) out.kundeNr = out.kundeNr.replace(/[^\d]/g, '');
   if (out.ort) {
     const [plz, ...rest] = out.ort.split(' ');
@@ -162,26 +216,26 @@ export function parseCard(rawLines: OcrLine[], barcode?: string | null): Partial
     return null;
   };
 
-  // Position: Barcode hat Vorrang, sonst Muster A26333-01 im Text.
-  const posFromBarcode = barcode ? fixCode(barcode) : null;
-  let posLine: OcrLine | null = null;
-  let posWord: OcrWord | null = null;
-  for (const l of lines) {
-    for (const w of l.words) {
-      const c = fixCode(w.text);
-      if (POS_RE.test(c) && (!posFromBarcode || c === posFromBarcode)) {
-        posLine = l;
-        posWord = w;
-        break;
-      }
-    }
-    if (posLine) break;
-  }
+  // Position: Barcode hat Vorrang, sonst Muster A26333-01 im Text. Unter dem Strichcode steht die
+  // Klarschrift oft mit Präfix („LA26333-01“) – maßgeblich ist die Pos-Spalte ganz links.
+  const kandidaten = lines
+    .flatMap((l) => l.words.map((w) => ({ l, w, c: ohneLaufkartenPraefix(fixCode(w.text.replace(/[_|]+$/, ''))) })))
+    .filter((k) => POS_RE.test(k.c))
+    .sort((a, b) => a.w.x0 - b.w.x0 || a.w.y0 - b.w.y0);
+  const roherCode = barcode ? fixCode(barcode) : null;
+  // Barcode „LA26333-01“: passt eine Position aus dem Text als Endung, gilt diese.
+  const ausText = roherCode ? kandidaten.find((k) => k.c !== roherCode && roherCode.endsWith(k.c)) : undefined;
+  const posFromBarcode = roherCode ? (ausText ? ausText.c : ohneLaufkartenPraefix(roherCode)) : null;
+  const treffer = posFromBarcode ? kandidaten.find((k) => k.c === posFromBarcode) ?? kandidaten[0] : kandidaten[0];
   if (posFromBarcode) out.pos = posFromBarcode;
-  else if (posWord) out.pos = fixCode(posWord.text);
-  if (posLine && posWord) {
-    const rest = segments(posLine.words.filter((w) => w.x0 > posWord!.x1));
-    if (rest.length) out.posText = join(rest[0]);
+  else if (treffer) out.pos = treffer.c;
+  if (treffer) {
+    // Bezeichnung: Wörter rechts der Position auf gleicher Höhe (auch wenn die OCR sie als eigene Zeile liefert)
+    const pw = treffer.w;
+    const h = wordH(pw);
+    const rechts = all.filter((w) => w.x0 > pw.x1 && Math.abs(yMitte(w) - yMitte(pw)) < h * 0.7 && !LINIE_RE.test(w.text));
+    const rest = segments(rechts).map(trimLinien).filter((t) => t.length);
+    if (rest.length && /\p{L}{2}/u.test(join(rest[0])) && !POS_RE.test(ohneLaufkartenPraefix(fixCode(rest[0][0].text)))) out.posText = join(rest[0]);
   }
 
   // Auftrag: Nummer nach „Auftrag:“, Rest der Zeile ist die Bezeichnung.

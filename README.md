@@ -44,7 +44,8 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 - Strichcode (Code 39/128) wird automatisch erkannt und liefert die Position. Sonst „Karte lesen“ tippen.
 - Ausgewertet wird nur der Sucherrahmen, und zwar das schärfste Kamerabild der letzten Sekunde (gegen Verwackeln).
 - Das Bild wird aufbereitet (`src/lib/bild.ts`): vergrößern, Schatten herausrechnen, Tisch/Hand ausblenden, schärfen. Danach läuft Tesseract (Deutsch) auf dem Gerät.
-- Fehlen danach wichtige Felder, liest die App das unbearbeitete Bild ein zweites Mal und führt beide Ergebnisse zusammen.
+- Bis zu drei Lesedurchgänge: aufbereitet und gerade gerichtet; bei fehlenden Pflichtfeldern das unbearbeitete Bild; bei fehlender Positionszeile im Streutext-Modus (findet Text neben dem Strichcode). Ergebnisse werden zusammengeführt.
+- Kartenkopf 2026 („Kunde: 10868“ + Name, Adressblock „Anrede/Kunde/Straße/PLZ, Ort/Tel“, Strichcode „LA…“) wird unterstützt, siehe `docs/Rapportkarte-Gestaltung.md`.
 - Neues Formular-Layout („Kunde: …“, „Straße: …“, eine Angabe pro Zeile) wird automatisch erkannt.
 - `src/lib/cardParser.ts` richtet sich bei der bisherigen Karte an der PLZ aus und findet von dort Straße (darüber), Telefon (darunter) und Kunden-Nr. (links). Er funktioniert auch, wenn die kleine Beschriftung „Kunde:“ nicht lesbar ist.
 - Schritt 1 zeigt das Scan-Bild zum Vergleichen (antippen = vergrößern). Es bleibt nur auf dem Gerät und kommt nicht ins PDF.

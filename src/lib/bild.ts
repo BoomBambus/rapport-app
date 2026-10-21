@@ -106,10 +106,14 @@ export interface Optionen {
   gamma?: number;
   /** Unscharf-Maskierung, Stärke 0 = aus */
   schaerfen?: number;
+  /** Lange Tabellenlinien entfernen (Text in umrandeten Zellen wird sonst übersprungen) */
+  linien?: boolean;
+  /** Schräglage messen und Bild gerade drehen */
+  geradeRichten?: boolean;
 }
 // Werte aus dem Vergleich mit simulierten Handybildern (scripts/bench/ocr-bench.ts):
 // ohne Aufbereitung 23/54 Felder, mit diesen Werten 43/54.
-export const STANDARD: Required<Optionen> = { papierMaske: 0.38, gamma: 1.2, schaerfen: 2.5 };
+export const STANDARD: Required<Optionen> = { papierMaske: 0.38, gamma: 1.2, schaerfen: 2.5, linien: false, geradeRichten: true };
 
 /**
  * Schatten und Helligkeitsverlauf entfernen: Bild durch geschätzten Papierhintergrund teilen,
@@ -140,7 +144,95 @@ export function ausgleichen(g: Grau, opt: Optionen = STANDARD): Grau {
     const n = Math.min(1, Math.max(0, (src[i] / Math.max(24, bg[i]) - schwarz) / (weiss - schwarz)));
     px[i] = Math.pow(n, o.gamma) * 255;
   }
+  if (o.linien) linienEntfernen(px, w, h);
+  if (o.geradeRichten) {
+    const a = schraeglage({ w, h, px });
+    if (Math.abs(a) >= 0.4) return drehen({ w, h, px }, a);
+  }
   return { w, h, px };
+}
+
+/**
+ * Schräglage in Grad schätzen (−8° … +8°): Bei richtigem Winkel liegen die dunklen Pixel
+ * (Schriftzeilen, Linien) in wenigen, scharf getrennten Zeilen – das Zeilenprofil ist dann am „spitzesten“.
+ */
+export function schraeglage(g: Grau): number {
+  const f = Math.min(1, 600 / g.w);
+  const k = f < 1 ? skalieren(g, Math.round(g.w * f), Math.round(g.h * f)) : g;
+  const pts: number[] = [];
+  for (let y = 0; y < k.h; y++) for (let x = 0; x < k.w; x++) if (k.px[y * k.w + x] < 110) pts.push(x, y);
+  let best = 0, bestScore = -1;
+  const bins = new Float64Array(k.h * 2 + k.w);
+  for (let a = -8; a <= 8.001; a += 0.25) {
+    const t = Math.tan((a * Math.PI) / 180);
+    bins.fill(0);
+    for (let i = 0; i < pts.length; i += 2) bins[Math.round(pts[i + 1] - pts[i] * t + k.w * 0.15 + k.h * 0.5)]++;
+    let score = 0;
+    for (let i = 0; i < bins.length; i++) score += bins[i] * bins[i];
+    if (score > bestScore) (bestScore = score), (best = a);
+  }
+  return best;
+}
+
+/** Um den Mittelpunkt drehen (Grad, positiv = gegen den Uhrzeigersinn im Bild), Rand weiß. */
+export function drehen(g: Grau, grad: number): Grau {
+  const { w, h } = g;
+  const r = (grad * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+  const cx = w / 2, cy = h / 2;
+  const px = new Uint8ClampedArray(w * h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const sx = c * (x - cx) - s * (y - cy) + cx;
+      const sy = s * (x - cx) + c * (y - cy) + cy;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      if (x0 < 0 || y0 < 0 || x0 >= w - 1 || y0 >= h - 1) {
+        px[y * w + x] = 255;
+        continue;
+      }
+      const dx = sx - x0, dy = sy - y0, i = y0 * w + x0;
+      px[y * w + x] = (g.px[i] * (1 - dx) + g.px[i + 1] * dx) * (1 - dy) + (g.px[i + w] * (1 - dx) + g.px[i + w + 1] * dx) * dy;
+    }
+  return { w, h, px };
+}
+
+/**
+ * Waagrechte und senkrechte Linien entfernen: dunkle Läufe, die viel länger sind als jedes
+ * Schriftzeichen, werden weiß. Schrift bleibt stehen, Tabellenrahmen verschwinden.
+ */
+export function linienEntfernen(px: Uint8ClampedArray, w: number, h: number, schwelle = 140) {
+  const minW = Math.round(w / 12); // waagrecht: länger als ~ 1/12 der Breite
+  const minH = Math.round(h / 8); // senkrecht: länger als ~ 1/8 der Höhe
+  const weg = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    let start = -1;
+    for (let x = 0; x <= w; x++) {
+      const dunkel = x < w && px[y * w + x] < schwelle;
+      if (dunkel && start < 0) start = x;
+      if (!dunkel && start >= 0) {
+        if (x - start >= minW) for (let k = start; k < x; k++) weg[y * w + k] = 1;
+        start = -1;
+      }
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let start = -1;
+    for (let y = 0; y <= h; y++) {
+      const dunkel = y < h && px[y * w + x] < schwelle;
+      if (dunkel && start < 0) start = y;
+      if (!dunkel && start >= 0) {
+        if (y - start >= minH) for (let k = start; k < y; k++) weg[k * w + x] = 1;
+        start = -1;
+      }
+    }
+  }
+  // Ränder der Linien (Kantenglättung) mit erfassen
+  for (let i = 0; i < weg.length; i++) if (weg[i]) {
+    px[i] = 255;
+    if (i % w > 0 && px[i - 1] < 220) px[i - 1] = 255;
+    if (i % w < w - 1 && px[i + 1] < 220) px[i + 1] = 255;
+    if (i >= w && px[i - w] < 220) px[i - w] = 255;
+    if (i < px.length - w && px[i + w] < 220) px[i + w] = 255;
+  }
 }
 
 /** Arbeitsbreite für die Texterkennung (Sucherausschnitt), ergab im Vergleich die besten Ergebnisse. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fixCode, parseCard, type OcrLine } from './cardParser';
+import { fixCode, ohneLaufkartenPraefix, parseCard, type OcrLine } from './cardParser';
 import scan from './__fixtures__/karte-scan.json';
 import foto from './__fixtures__/karte-foto.json';
 import kamera from './__fixtures__/karte-kamera.json';
@@ -8,6 +8,8 @@ import weit from './__fixtures__/karte-kamera-weit.json';
 import schraeg from './__fixtures__/karte-kamera-schraeg.json';
 import formularKamera from './__fixtures__/formular-kamera.json';
 import formularSchraeg from './__fixtures__/formular-schraeg.json';
+import k2026 from './__fixtures__/karte2026-kamera.json';
+import k2026dunkel from './__fixtures__/karte2026-dunkel.json';
 
 // Fixtures: Tesseract-Ergebnis (PSM 4) der Beispiel-Rapportkarte (Testkunde „Mustermann“;
 // die Karte selbst liegt aus Datenschutzgründen nicht im Repository) –
@@ -81,6 +83,33 @@ describe('Formular-Layout', () => {
     const z = (y: number, ...ws: [string, number][]) => ({ text: ws.map((x) => x[0]).join(' '), words: ws.map(([t, x]) => w(t, x, y)) });
     const d = parseCard([z(0, ['unde:', 0], ['Huber', 200], ['GmbH', 280]), z(40, ['Straße:', 0], ['Hauptstr.', 200], ['5', 320]), z(80, ['PLZ', 0], ['/', 50], ['Ort:', 70], ['78465', 200], ['Konstanz', 280])]);
     expect(d).toMatchObject({ kunde: 'Huber GmbH', strasse: 'Hauptstr. 5', ort: '78465 Konstanz' });
+  });
+});
+
+// Kartenkopf 2026 (vom Nutzer umgebaut): „Kunde: 10868 / (Name)“, darunter Anrede/Kunde/Straße/PLZ, Ort/Tel,
+// Strichcode mit Klarschrift „LA26333-01“. Die kleine Beschriftung „Kunde:“ oben fehlt im Kamerabild.
+describe('Kartenkopf 2026', () => {
+  it('liest alle Felder vom Kamerabild', () => {
+    const d = parseCard(k2026 as OcrLine[]);
+    expect(d).toMatchObject({
+      kundeNr: '10868',
+      kunde: 'Mustermann | Kundenname folgt!', // Name oben, nicht „Eugen Mustermann“ aus der Adresse
+      strasse: 'Niemandslandstr. 1',
+      ort: '68229 Mannheim',
+      tel: '0621 / 4829-310',
+      auftrag: 'A26333',
+      auftragText: 'Testauftrag',
+      pos: 'A26333-01', // nicht „LA26333-01“ aus der Klarschrift unter dem Strichcode
+    });
+  });
+  it('dunkles Bild: Adresse und Position trotzdem', () => {
+    expect(parseCard(k2026dunkel as OcrLine[])).toMatchObject({ strasse: 'Niemandslandstr. 1', ort: '68229 Mannheim', tel: '0621 / 4829-310', pos: 'A26333-01', auftrag: 'A26333' });
+  });
+  it('Strichcode „LA26333-01“ → Position A26333-01', () => {
+    expect(ohneLaufkartenPraefix('LA26333-01')).toBe('A26333-01');
+    expect(ohneLaufkartenPraefix('A26333-01')).toBe('A26333-01');
+    expect(parseCard([], 'LA26333-01')).toEqual({ pos: 'A26333-01', auftrag: 'A26333' });
+    expect(parseCard(k2026 as OcrLine[], 'LA26333-01').pos).toBe('A26333-01');
   });
 });
 

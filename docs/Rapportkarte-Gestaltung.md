@@ -43,10 +43,23 @@ Mit QR-Code im Scanfeld werden alle Felder immer fehlerfrei übernommen (siehe [
 
 Der Rest der Karte (Ausgeführte Arbeiten, Material, Stunden, Unterschriften) kann bleiben, wie er ist – die App liest nur das Scanfeld.
 
+## Kartenkopf 2026 (aktueller Umbau)
+
+Der umgebaute Kopf – „Kunde: 10868“ mit Namen darunter, Adressblock mit „Anrede / Kunde / Straße / PLZ, Ort / Tel“, Strichcode „LA26333-01“ in der Positionszeile – wird von der App unterstützt:
+
+- **Kunden-Nr. und Name** kommen aus dem oberen Feld (Zahl, darunter der Name). Das „Kunde:“ im Adressblock (Ansprechpartner) wird nur genutzt, wenn oben kein Name steht. „Anrede“ wird ignoriert.
+- **Position:** Das „L“ vor der Nummer im Strichcode bzw. in der Klarschrift („LA26333-01“) wird entfernt → `A26333-01`.
+- Gemessen im App-Ablauf mit sechs simulierten Handyfotos: **40 von 54** Feldern (Android 9/9, iPhone gut/dunkel 8/9). Schwach: stark schräg gehaltene Karte.
+
+Was diesen Kopf noch verbessern würde (beobachtet bei den Tests):
+- Die **Positionszeile neben dem Strichcode** überspringt die Texterkennung im Normalmodus; die App liest sie mit einem Zusatzdurchgang. Sicherer: zusätzlich eine Zeile „Position: A26333-01 Rapportposition Test“ in den Kopf, oder den Strichcode nicht in dieselbe Zeile.
+- Die kleine Beschriftung **„Kunde:“ oben** geht auf Handyfotos verloren. In derselben Größe wie die übrigen Beschriftungen drucken, besser „Kunden-Nr.:“.
+- Ein **QR-Code** im freien Feld unter dem Logo macht alles fehlerfrei (siehe QR-Anleitung).
+
 ## Was die App automatisch erkennt
 
 - Steht ein **QR-Code** mit Auftragsdaten auf der Karte → wird sofort übernommen, ohne Texterkennung.
-- Findet die App die Beschriftungen **„Straße:“ / „PLZ / Ort:“ / „Kunden-Nr.:“** → liest sie die Karte im neuen Formular-Layout.
+- Findet die App die Beschriftungen **„Straße:“ / „PLZ / Ort:“ bzw. „PLZ, Ort:“ / „Kunden-Nr.:“** → liest sie die Karte im Formular-Layout (Vorschlag oben und Kartenkopf 2026).
 - Sonst → bisherige Karte (Spaltensuche über die Postleitzahl).
 
 Alte und neue Karten funktionieren also nebeneinander, eine Umstellung ist jederzeit möglich.

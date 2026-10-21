@@ -43,12 +43,17 @@ for (const [name, W, H] of BILDER) {
       const t = Date.now();
       const teile: Partial<Auftragsdaten>[] = [];
       let n = 0;
-      for (const v of st.slice(2).split('+')) {
+      for (const vv of st.slice(2).split('+')) {
+        // „name@11“ = Tesseract-Seitenmodus 11 (verstreuter Text) für diesen Durchgang
+        const [v, psm] = vv.split('@');
         const gg = v === 'roh' ? graustufen(rgba, W, H) : aufbereiten(rgba, W, H, rahmen, VARIANTEN[v]);
+        if (psm) await w.setParameters({ tessedit_pageseg_mode: psm as never });
         const { data } = await w.recognize(pgm(gg), {}, { text: true, blocks: true });
+        if (psm) await w.setParameters({ tessedit_pageseg_mode: '4' as never });
         teile.push(parseCard(linesFromTesseract(data as never)));
         n++;
-        if (!unvollstaendig(zusammenfuehren(...teile))) break;
+        const zw = zusammenfuehren(...teile);
+        if (!unvollstaendig(zw) && (zw.posText || !process.env.MIT_POSTEXT)) break;
       }
       const d = zusammenfuehren(...teile);
       let ok = 0;

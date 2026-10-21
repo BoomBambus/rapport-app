@@ -33,14 +33,20 @@ export function prepareOcr(): Promise<Worker> {
   return workerP;
 }
 
-export async function readCard(img: HTMLCanvasElement, barcode: string | null, onProgress?: (p: number) => void): Promise<Partial<Auftragsdaten>> {
+/**
+ * Karte lesen. `modus`: '4' = Zeilen einer Spalte (Standard), '11' = verstreuter Text ohne Layoutanalyse
+ * (findet z. B. die Positionszeile neben dem Strichcode, die im Standardmodus übersprungen wird).
+ */
+export async function readCard(img: HTMLCanvasElement, barcode: string | null, onProgress?: (p: number) => void, modus: '4' | '11' = '4'): Promise<Partial<Auftragsdaten>> {
   const w = await prepareOcr();
   progressCb = onProgress ?? null;
   try {
+    if (modus !== '4') await w.setParameters({ tessedit_pageseg_mode: modus as never });
     const { data } = await w.recognize(img, {}, { text: true, blocks: true });
     return parseCard(linesFromTesseract(data as never), barcode);
   } finally {
     progressCb = null;
+    if (modus !== '4') await w.setParameters({ tessedit_pageseg_mode: '4' as never });
   }
 }
 

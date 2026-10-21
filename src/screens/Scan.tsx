@@ -73,9 +73,12 @@ export function Scan({ onAbbrechen, onErkannt, onManuell }: { onAbbrechen: () =>
     if (qd && qrVollstaendig(qd)) return fertig({ ...qd, scanQuelle: 'qr', scanBild: vorschauBild(ausschnitt) });
     let text: Partial<Auftragsdaten> = {};
     try {
-      text = await readCard(fuerTexterkennung(ausschnitt), code, (p) => setFortschritt(p * 0.6));
-      // Fehlt noch etwas Wichtiges? Zweiter Durchgang auf dem unbearbeiteten Bild, Ergebnisse zusammenführen.
-      if (unvollstaendig(text)) text = zusammenfuehren(text, await readCard(ausschnitt, code, (p) => setFortschritt(0.6 + p * 0.4)));
+      const aufbereitet = fuerTexterkennung(ausschnitt);
+      text = await readCard(aufbereitet, code, (p) => setFortschritt(p * 0.5));
+      // Fehlt noch etwas Wichtiges? Zweiter Durchgang auf dem unbearbeiteten Bild.
+      if (unvollstaendig(text)) text = zusammenfuehren(text, await readCard(ausschnitt, code, (p) => setFortschritt(0.5 + p * 0.25)));
+      // Positionszeile fehlt (steht neben dem Strichcode)? Dritter Durchgang im Streutext-Modus.
+      if (!text.pos || !text.posText) text = zusammenfuehren(text, await readCard(aufbereitet, code, (p) => setFortschritt(0.75 + p * 0.25), '11'));
     } catch {
       // Texterkennung nicht verfügbar – mit Codes allein weiter
       if (code) text = { pos: code, auftrag: code.split('-')[0] };
