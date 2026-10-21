@@ -36,13 +36,17 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 ## Kartenerkennung
 
+**Gestaltung der Karte:** Wie die Rapportkarte aussehen sollte, damit die Texterkennung zuverlässig funktioniert (Scanfeld, eine Angabe pro Zeile, Schwarz auf Weiß), steht in [`docs/Rapportkarte-Gestaltung.md`](docs/Rapportkarte-Gestaltung.md). Mit dem vorgeschlagenen Layout: 52 von 54 Feldern richtig, statt 44 mit der bisherigen Karte.
+
 **Mit QR-Code (empfohlen):** Steht auf der Rapportkarte ein QR-Code mit den Auftragsdaten, erkennt die App ihn ohne Antippen in unter einer Sekunde. Alle Felder werden fehlerfrei übernommen, und Schritt 1 ist mit „QR-Code“ markiert. Format und Druckvorgaben für den Softwareanbieter stehen in [`docs/QR-Code-Rapportkarte.md`](docs/QR-Code-Rapportkarte.md).
 
 **Ohne QR-Code (Texterkennung):**
 - Strichcode (Code 39/128) wird automatisch erkannt und liefert die Position. Sonst „Karte lesen“ tippen.
 - Ausgewertet wird nur der Sucherrahmen, und zwar das schärfste Kamerabild der letzten Sekunde (gegen Verwackeln).
 - Das Bild wird aufbereitet (`src/lib/bild.ts`): vergrößern, Schatten herausrechnen, Tisch/Hand ausblenden, schärfen. Danach läuft Tesseract (Deutsch) auf dem Gerät.
-- `src/lib/cardParser.ts` richtet sich an der PLZ aus und findet von dort Straße (darüber), Telefon (darunter) und Kunden-Nr. (links). Er funktioniert auch, wenn die kleine Beschriftung „Kunde:“ nicht lesbar ist.
+- Fehlen danach wichtige Felder, liest die App das unbearbeitete Bild ein zweites Mal und führt beide Ergebnisse zusammen.
+- Neues Formular-Layout („Kunde: …“, „Straße: …“, eine Angabe pro Zeile) wird automatisch erkannt.
+- `src/lib/cardParser.ts` richtet sich bei der bisherigen Karte an der PLZ aus und findet von dort Straße (darüber), Telefon (darunter) und Kunden-Nr. (links). Er funktioniert auch, wenn die kleine Beschriftung „Kunde:“ nicht lesbar ist.
 - Schritt 1 zeigt das Scan-Bild zum Vergleichen (antippen = vergrößern). Es bleibt nur auf dem Gerät und kommt nicht ins PDF.
 - Taschenlampen-Knopf, wo das Handy ihn anbietet (Android).
 
@@ -65,7 +69,7 @@ Die OCR-Dateien liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vo
 ## Offene Punkte
 
 - **Materialstamm**: `src/data/katalog.ts` enthält Beispieldaten. Den echten Stamm dort eintragen (Nr., Bezeichnung, Einheit, Kategorie).
-- **QR-Code auf der Karte**: beim Softwareanbieter anfragen, siehe `docs/QR-Code-Rapportkarte.md`. Bis dahin läuft die Erkennung per Text.
+- **Rapportkarte anpassen**: beim Softwareanbieter anfragen – Layout nach `docs/Rapportkarte-Gestaltung.md`, am besten mit QR-Code nach `docs/QR-Code-Rapportkarte.md`. Bis dahin läuft die Erkennung per Text auf der bisherigen Karte.
 - Gegenüber dem Entwurf geändert: Textbausteine in Schritt 2 entfernt, Plus/Minus durch Schnellknöpfe mit Rückgängig ersetzt, Fotos mit Bezeichnung und als Pflicht.
 - Gegenüber dem Entwurf ergänzt: Entwurf fortsetzen/verwerfen, Profil (Name, Qualifikation, Standort) statt fest „J. Keller“, Auslöser „Karte lesen“ und Galerie-Auswahl im Scan, „Heute“-Einträge erneut teilen, echtes Datum statt 20.10.2026.
 - Weggelassen: Variante 1b „Übersicht“ (nicht gewählt) und die Spalte „Gehen“ (laut Chat entfallen).

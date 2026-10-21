@@ -4,7 +4,7 @@ import { blobToCanvas, prepareOcr, readCard } from '../lib/ocr';
 import { sucherRahmen } from '../lib/bild';
 import { bildSchaerfe, codesFinden, fuerTexterkennung, vorschauBild, zeichnen } from '../lib/scanner';
 import { leseQr, qrVollstaendig } from '../lib/qr';
-import { zusammenfuehren } from '../lib/cardParser';
+import { unvollstaendig, zusammenfuehren } from '../lib/cardParser';
 import type { Auftragsdaten } from '../lib/types';
 
 export type ScanErgebnis = Partial<Auftragsdaten> & { scanBild?: string; scanQuelle: 'qr' | 'text' };
@@ -73,7 +73,9 @@ export function Scan({ onAbbrechen, onErkannt, onManuell }: { onAbbrechen: () =>
     if (qd && qrVollstaendig(qd)) return fertig({ ...qd, scanQuelle: 'qr', scanBild: vorschauBild(ausschnitt) });
     let text: Partial<Auftragsdaten> = {};
     try {
-      text = await readCard(fuerTexterkennung(ausschnitt), code, setFortschritt);
+      text = await readCard(fuerTexterkennung(ausschnitt), code, (p) => setFortschritt(p * 0.6));
+      // Fehlt noch etwas Wichtiges? Zweiter Durchgang auf dem unbearbeiteten Bild, Ergebnisse zusammenführen.
+      if (unvollstaendig(text)) text = zusammenfuehren(text, await readCard(ausschnitt, code, (p) => setFortschritt(0.6 + p * 0.4)));
     } catch {
       // Texterkennung nicht verfügbar – mit Codes allein weiter
       if (code) text = { pos: code, auftrag: code.split('-')[0] };

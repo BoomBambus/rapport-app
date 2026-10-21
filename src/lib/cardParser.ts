@@ -86,6 +86,69 @@ function joinWrapped(parts: string[]): string {
     .trim();
 }
 
+// ---------- Formular-Layout „Beschriftung: Wert“ (Vorschlag für die neue Rapportkarte) ----------
+// Jede Angabe in einer eigenen Zeile, Beschriftung links, Wert rechts daneben:
+//   Kunden-Nr.:  10868
+//   Kunde:       Mustermann GmbH
+//   Straße:      Niemandslandstr. 1
+//   PLZ / Ort:   68229 Mannheim
+//   Telefon:     0621 / 4829-310
+//   Projekt:     …
+//   Auftrag:     A26333   Testauftrag
+//   Position:    A26333-01   Rapportposition Test
+// Erster Buchstabe darf fehlen – die OCR verschluckt ihn gern, wenn eine Linie nahe davor liegt.
+const FORMULAR: [RegExp, keyof Auftragsdaten][] = [
+  [/^k?unden\s*-?\s*n[ro]\.?:?$/i, 'kundeNr'],
+  [/^k?unde:?$/i, 'kunde'],
+  [/^s?tra(ß|ss|b)e:?$/i, 'strasse'],
+  [/^p?lz\s*\/?\s*ort:?$/i, 'ort'],
+  [/^t?ele?fon:?$/i, 'tel'],
+  [/^p?rojekt:?$/i, 'projekt'],
+  [/^a?uftrag:?$/i, 'auftrag'],
+  [/^p?osition:?$/i, 'pos'],
+];
+/** Merkmal des neuen Layouts: Beschriftungen, die die alte Karte nicht hat. */
+const NUR_FORMULAR: (keyof Auftragsdaten)[] = ['strasse', 'ort', 'kundeNr'];
+
+function leseFormular(lines: OcrLine[]): Partial<Auftragsdaten> | null {
+  const out: Partial<Auftragsdaten> = {};
+  let treffer = 0;
+  for (const l of lines) {
+    const ws = [...l.words].sort((a, b) => a.x0 - b.x0);
+    // Beschriftung aus den ersten 1–3 Wörtern („PLZ / Ort:“ sind drei Wörter)
+    for (let n = Math.min(3, ws.length - 1); n >= 1; n--) {
+      const label = ws.slice(0, n).map((w) => w.text).join(' ').replace(/^[^\p{L}]+/u, '');
+      const f = FORMULAR.find(([re]) => re.test(label));
+      if (!f) continue;
+      // Wert: erste Wortgruppe nach der Beschriftung (QR-Code o. Ä. rechts daneben fällt weg)
+      const teile = segments(ws.slice(n));
+      if (!teile.length) break;
+      const feld = f[1];
+      if (out[feld]) break;
+      if (feld === 'auftrag' || feld === 'pos') {
+        // „A26333   Testauftrag“: Nummer, dann Bezeichnung
+        const [nr, ...rest] = teile[0];
+        out[feld] = fixCode(nr.text);
+        const text = rest.length ? join(rest) : teile[1] ? join(teile[1]) : '';
+        if (text) out[feld === 'auftrag' ? 'auftragText' : 'posText'] = text;
+      } else {
+        out[feld] = join(teile[0]);
+      }
+      if (NUR_FORMULAR.includes(feld)) treffer++;
+      break;
+    }
+  }
+  if (treffer < 2) return null;
+  if (out.kundeNr) out.kundeNr = out.kundeNr.replace(/[^\d]/g, '');
+  if (out.ort) {
+    const [plz, ...rest] = out.ort.split(' ');
+    if (PLZ_RE.test(fixPlz(plz))) out.ort = [fixPlz(plz), ...rest].join(' ');
+  }
+  if (out.tel) out.tel = out.tel.replace(/\s*\/\s*/, ' / ');
+  if (out.projekt && /^[-–—]$/.test(out.projekt)) delete out.projekt;
+  return out;
+}
+
 export function parseCard(rawLines: OcrLine[], barcode?: string | null): Partial<Auftragsdaten> {
   const lines = clean(rawLines);
   const out: Partial<Auftragsdaten> = {};
@@ -202,6 +265,13 @@ export function parseCard(rawLines: OcrLine[], barcode?: string | null): Partial
     if (nr) out.kundeNr = nr.text.replace(/[^\d]/g, '');
     const kdSeg = segments(after);
     if (kdSeg.length > 1 && /\p{L}/u.test(join(kdSeg[1]))) out.strasse = join(kdSeg[1]);
+  }
+
+  // Neues Formular-Layout erkannt? Dann gelten dessen Werte (verlässlicher als die Spaltensuche).
+  const formular = leseFormular(lines);
+  if (formular) {
+    for (const [k, v] of Object.entries(formular) as [keyof Auftragsdaten, string][]) if (v && !(k === 'pos' && posFromBarcode)) out[k] = v;
+    if (out.pos && !out.auftrag) out.auftrag = out.pos.split('-')[0];
   }
 
   // Rückfall ohne Spaltenerkennung: Regeln über den Fließtext.

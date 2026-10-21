@@ -1,11 +1,11 @@
 // Entwickler-Werkzeug: Texterkennung der Rapportkarte mit/ohne Bildaufbereitung vergleichen.
-// Aufruf: npx vite-node scripts/bench/ocr-bench.ts <ordner> [stufen, z. B. roh,aufbereitet]
+// Aufruf: [PREFIX=neu-] npx vite-node scripts/bench/ocr-bench.ts <ordner> [stufen, z. B. roh,aufbereitet,crop,M:aufbereitet+roh]
 // <ordner> enthält simulierte Kamerabilder als rohe RGBA-Dateien bench-<name>.rgba (siehe BILDER).
 // Die Bilder werden aus einer Beispiel-Rapportkarte erzeugt; die Karte liegt aus Datenschutzgründen
 // nicht im Repository.
 import fs from 'node:fs';
 import { createWorker } from 'tesseract.js';
-import { aufbereiten, graustufen, sucherRahmen, type Grau } from '../../src/lib/bild';
+import { aufbereiten, ausschnitt, graustufen, skalieren, sucherRahmen, type Grau } from '../../src/lib/bild';
 import { linesFromTesseract, parseCard, unvollstaendig, zusammenfuehren } from '../../src/lib/cardParser';
 import type { Auftragsdaten } from '../../src/lib/types';
 
@@ -34,7 +34,7 @@ if (process.env.VARIANTEN) Object.assign(VARIANTEN, JSON.parse(process.env.VARIA
 const stufen = (process.argv[3] || 'roh,aufbereitet').split(',');
 const summe: Record<string, number> = {};
 for (const [name, W, H] of BILDER) {
-  const rgba = new Uint8ClampedArray(fs.readFileSync(`${DIR}/bench-${name}.rgba`));
+  const rgba = new Uint8ClampedArray(fs.readFileSync(`${DIR}/bench-${process.env.PREFIX ?? ''}${name}.rgba`));
   // Sucher in der App: volle Breite, Seitenverhältnis 3:2
   const rahmen = sucherRahmen(W, H, 358, 239);
   const zeile: string[] = [];
@@ -59,7 +59,12 @@ for (const [name, W, H] of BILDER) {
       zeile.push(`${st}: ${ok}/9 (${n} Durchg., ${((Date.now() - t) / 1000).toFixed(1)} s) ${falsch.join(' ')}`);
       continue;
     }
-    const g = st === 'roh' ? graustufen(rgba, W, H) : aufbereiten(rgba, W, H, rahmen, VARIANTEN[st]);
+    const crop = () => ausschnitt(graustufen(rgba, W, H), rahmen);
+    const g =
+      st === 'roh' ? graustufen(rgba, W, H)
+      : st === 'crop' ? crop()
+      : st.startsWith('cropScale') ? ((c) => skalieren(c, +st.slice(9), Math.round((c.h * +st.slice(9)) / c.w)))(crop())
+      : aufbereiten(rgba, W, H, rahmen, VARIANTEN[st]);
     if (st === 'aufbereitet' && process.argv[4]) fs.writeFileSync(`${DIR}/auf-${name}.pgm`, pgm(g));
     const t = Date.now();
     const { data } = await w.recognize(pgm(g), {}, { text: true, blocks: true });

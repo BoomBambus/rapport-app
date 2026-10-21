@@ -6,6 +6,8 @@ import kamera from './__fixtures__/karte-kamera.json';
 import dunkel from './__fixtures__/karte-kamera-dunkel.json';
 import weit from './__fixtures__/karte-kamera-weit.json';
 import schraeg from './__fixtures__/karte-kamera-schraeg.json';
+import formularKamera from './__fixtures__/formular-kamera.json';
+import formularSchraeg from './__fixtures__/formular-schraeg.json';
 
 // Fixtures: Tesseract-Ergebnis (PSM 4) der Beispiel-Rapportkarte (Testkunde „Mustermann“;
 // die Karte selbst liegt aus Datenschutzgründen nicht im Repository) –
@@ -53,6 +55,32 @@ describe('parseCard', () => {
 
   it('nur Barcode, kein Text: Auftrag aus Position', () => {
     expect(parseCard([], 'A26333-01')).toEqual({ pos: 'A26333-01', auftrag: 'A26333' });
+  });
+});
+
+// Vorschlag neue Rapportkarte (docs/Rapportkarte-Gestaltung.md): eine Angabe pro Zeile, „Beschriftung: Wert“.
+describe('Formular-Layout', () => {
+  for (const [name, lines] of [['Kamerabild', formularKamera], ['schräg gehalten', formularSchraeg]] as const) {
+    it(`liest alle Felder (${name})`, () => {
+      expect(parseCard(lines as OcrLine[])).toEqual({
+        kundeNr: '10868',
+        kunde: 'Mustermann | Kundenname folgt!',
+        strasse: 'Niemandslandstr. 1',
+        ort: '68229 Mannheim',
+        tel: '0621 / 4829-310',
+        auftrag: 'A26333',
+        auftragText: 'Testauftrag',
+        pos: 'A26333-01',
+        posText: 'Rapportposition Test',
+      });
+    });
+  }
+
+  it('fehlender Anfangsbuchstabe der Beschriftung („unde:“) wird toleriert', () => {
+    const w = (text: string, x0: number, y: number) => ({ text, x0, y0: y, x1: x0 + text.length * 12, y1: y + 20 });
+    const z = (y: number, ...ws: [string, number][]) => ({ text: ws.map((x) => x[0]).join(' '), words: ws.map(([t, x]) => w(t, x, y)) });
+    const d = parseCard([z(0, ['unde:', 0], ['Huber', 200], ['GmbH', 280]), z(40, ['Straße:', 0], ['Hauptstr.', 200], ['5', 320]), z(80, ['PLZ', 0], ['/', 50], ['Ort:', 70], ['78465', 200], ['Konstanz', 280])]);
+    expect(d).toMatchObject({ kunde: 'Huber GmbH', strasse: 'Hauptstr. 5', ort: '78465 Konstanz' });
   });
 });
 
