@@ -1,4 +1,4 @@
-// Texterkennung der Rapportkarte (Tesseract, Deutsch) und Barcode-Lesen (ZXing, Code 39/128).
+// Texterkennung der Rapportkarte (Tesseract, Deutsch). Codes (QR/Strichcode) siehe scanner.ts.
 // Alles läuft auf dem Gerät; Dateien liegen unter /ocr (siehe scripts/copy-ocr.mjs).
 import type { Worker } from 'tesseract.js';
 import { linesFromTesseract, parseCard } from './cardParser';
@@ -41,32 +41,6 @@ export async function readCard(img: HTMLCanvasElement, barcode: string | null, o
     return parseCard(linesFromTesseract(data as never), barcode);
   } finally {
     progressCb = null;
-  }
-}
-
-// ---------- Barcode ----------
-type Reader = import('@zxing/browser').BrowserMultiFormatOneDReader;
-let readerP: Promise<Reader> | null = null;
-
-export function barcodeReader(): Promise<Reader> {
-  if (!readerP)
-    readerP = (async () => {
-      const [{ BrowserMultiFormatOneDReader }, { DecodeHintType, BarcodeFormat }] = await Promise.all([import('@zxing/browser'), import('@zxing/library')]);
-      const hints = new Map();
-      hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.CODE_39, BarcodeFormat.CODE_128]);
-      // Nur 1D-Leser: schneller, und ohne die Warnungen des MultiFormatReader bei jedem Bild
-      return new BrowserMultiFormatOneDReader(hints, { delayBetweenScanAttempts: 250 });
-    })();
-  return readerP;
-}
-
-/** Barcode in einem Standbild suchen; null wenn keiner gefunden. */
-export async function decodeBarcode(canvas: HTMLCanvasElement): Promise<string | null> {
-  try {
-    const r = await barcodeReader();
-    return r.decodeFromCanvas(canvas).getText().replace(/^\*|\*$/g, '');
-  } catch {
-    return null;
   }
 }
 

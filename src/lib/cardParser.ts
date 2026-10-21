@@ -50,7 +50,10 @@ const clean = (lines: OcrLine[]): OcrLine[] =>
     .map((l) => ({ text: l.text, words: l.words.filter((w) => w.text.trim()) }))
     .filter((l) => l.words.length);
 
-const isLabel = (w: OcrWord, name: string) => new RegExp(`^${name}:?$`, 'i').test(w.text.trim());
+// Beschriftung, auch wenn die OCR den ersten Buchstaben verschluckt („rojekt:“)
+const isLabel = (w: OcrWord, name: string) => new RegExp(`^(${name}|${name.slice(1)}):?$`, 'i').test(w.text.trim());
+const STRASSE_RE = /(str\.?|straße|strasse|weg|platz|gasse|allee|ring|damm|ufer|steig|berg|hof)\b/i;
+const yMitte = (w: OcrWord) => (w.y0 + w.y1) / 2;
 const wordH = (w: OcrWord) => w.y1 - w.y0;
 const join = (ws: OcrWord[]) => ws.map((w) => w.text).join(' ').replace(/\s+/g, ' ').trim();
 
@@ -138,46 +141,67 @@ export function parseCard(rawLines: OcrLine[], barcode?: string | null): Partial
     if (after.length) out.projekt = join(segments(after)[0]);
   }
 
-  // Kunde: Nummer, Namensspalte darunter, Adressspalte rechts daneben.
+  // Kunde: an der Adressspalte ausrichten. Die PLZ wird am zuverlässigsten erkannt; das kleine,
+  // graue „Kunde:“ geht im Kamerabild oft verloren und dient nur als Zusatzhinweis.
   const kd = findLabel('Kunde');
-  if (kd) {
+  const grenze = (prj?.word ?? auf?.word)?.y0 ?? Infinity;
+  const plzK = lines
+    .flatMap((l) => l.words.map((w, i) => ({ l, w, i })))
+    .filter(({ l, w, i }) => {
+      const nach = l.words[i + 1];
+      return PLZ_RE.test(fixPlz(w.text)) && nach && /^\p{Lu}/u.test(nach.text) && !STRASSE_RE.test(nach.text) && w.y0 < grenze;
+    })
+    .sort((x, y) => x.w.y0 - y.w.y0)[0];
+
+  if (plzK) {
+    const plz = plzK.w;
+    const h = wordH(plz);
+    const addrX = plz.x0;
+    const inSpalte = (l: OcrLine) => {
+      const ws = l.words.filter((w) => w.x0 >= addrX - h && w.x0 < addrX + h * 30);
+      return ws.length ? segments(ws)[0] : [];
+    };
+    // Ort: PLZ und folgende Wörter
+    const ortWs = segments(plzK.l.words.slice(plzK.i))[0];
+    out.ort = [fixPlz(ortWs[0].text), ...ortWs.slice(1).map((w) => w.text)].join(' ');
+    // Straße: nächste Zeile darüber in derselben Spalte
+    const oben = lines
+      .map((l) => ({ l, ws: inSpalte(l) }))
+      .filter(({ ws }) => ws.length && yMitte(ws[0]) < plz.y0 - h * 0.3 && yMitte(ws[0]) > plz.y0 - h * 2.8 && /\p{L}/u.test(join(ws)))
+      .sort((x, y) => yMitte(y.ws[0]) - yMitte(x.ws[0]))[0];
+    if (oben) out.strasse = join(oben.ws);
+    // Telefon: Zeile darunter
+    const unten = lines
+      .map((l) => inSpalte(l))
+      .find((ws) => ws.length && yMitte(ws[0]) > plz.y1 + h * 0.2 && yMitte(ws[0]) < plz.y1 + h * 2.8 && TEL_RE.test(join(ws)) && (join(ws).match(/\d/g) || []).length >= 6);
+    if (unten) out.tel = join(unten).replace(/\s*\/\s*/, ' / ');
+    // Kunden-Nr.: Zahl links der Adressspalte, auf Höhe der Straße (bzw. nach „Kunde:“)
+    const hoehe = oben ? yMitte(oben.ws[0]) : plz.y0 - h * 1.3;
+    const nrKand = all.filter(
+      (w) => /^\(?\d{3,8}\)?$/.test(w.text) && w.x1 < addrX - h && Math.abs(yMitte(w) - hoehe) < h * 1.3 && (!kd || w.x0 > kd.word.x0),
+    );
+    const nr = nrKand.sort((x, y) => y.x1 - x.x1)[0];
+    if (nr) out.kundeNr = nr.text.replace(/[^\d]/g, '');
+    // Name: schmale Spalte unter der Nummer bis vor Projekt/Auftrag
+    const nameX = nr ? nr.x0 : kd ? kd.word.x1 + h : -Infinity;
+    const start = nr ? nr.y1 - h * 0.3 : hoehe + h * 0.5;
+    const ende = Math.min(grenze, plz.y1 + h * 7);
+    const teile: string[] = [];
+    for (const l of lines) {
+      const ws = l.words.filter(
+        (w) => w !== nr && w !== kd?.word && w.x0 >= nameX - h * 2 && w.x1 < addrX - h * 0.5 && w.y0 >= start && w.y1 <= ende && !isLabel(w, 'Kunde'),
+      );
+      if (ws.length) teile.push(join(ws));
+    }
+    const name = joinWrapped(teile);
+    if (name) out.kunde = name;
+  } else if (kd) {
+    // Ohne erkennbare PLZ: wie bisher über „Kunde:“ und die Spalten dieser Zeile
     const after = kd.line.words.slice(kd.idx + 1);
     const nr = after.find((w) => /^\d{3,8}$/.test(w.text.replace(/[^\d]/g, '')) && /^\(?\d/.test(w.text));
     if (nr) out.kundeNr = nr.text.replace(/[^\d]/g, '');
-    const top = kd.word.y0 - wordH(kd.word) * 0.5;
-    const bottomWord = prj?.word ?? auf?.word;
-    const bottom = bottomWord ? bottomWord.y0 - 2 : top + wordH(kd.word) * 8;
-    const nameX = nr ? nr.x0 : kd.word.x1;
-    const inBlock = all.filter((w) => w.y0 >= top && w.y1 <= bottom + wordH(w) && w.y0 < bottom);
-
-    // Adressspalte: zweite Wortgruppe in der Kunde-Zeile (nach großer Lücke), sonst über die PLZ.
     const kdSeg = segments(after);
-    const plz = inBlock.find((w) => PLZ_RE.test(fixPlz(w.text)) && w.x0 > nameX + 20);
-    const addrStart = kdSeg.length > 1 ? kdSeg[1][0] : plz;
-    const addrX = addrStart ? addrStart.x0 : Infinity;
-    const tol = addrStart ? wordH(addrStart) : wordH(kd.word);
-
-    // Zeilen im Block (OCR-Zeilen) getrennt nach Spalte.
-    const nameParts: string[] = [];
-    const addrParts: string[] = [];
-    for (const l of lines) {
-      const ws = l.words.filter((w) => inBlock.includes(w));
-      if (!ws.length) continue;
-      const nameWs = ws.filter((w) => w.x0 >= nameX - tol * 2 && w.x1 < addrX - tol * 0.5 && w !== nr && w !== kd.word);
-      if (nameWs.length) nameParts.push(join(nameWs));
-      const addrWs = ws.filter((w) => w.x0 >= addrX - tol);
-      if (addrWs.length) addrParts.push(join(segments(addrWs)[0]));
-    }
-    const name = joinWrapped(nameParts);
-    if (name) out.kunde = name;
-
-    for (const raw of addrParts) {
-      const [first, ...rest] = raw.split(' ');
-      const a = PLZ_RE.test(fixPlz(first)) && rest.length ? [fixPlz(first), ...rest].join(' ') : raw;
-      if (!out.ort && /^\d{5}\s+\S/.test(a)) out.ort = a;
-      else if (!out.tel && TEL_RE.test(a) && (a.match(/\d/g) || []).length >= 6) out.tel = a.replace(/\s*\/\s*/, ' / ');
-      else if (!out.strasse && !out.ort && /\p{L}/u.test(a)) out.strasse = a;
-    }
+    if (kdSeg.length > 1 && /\p{L}/u.test(join(kdSeg[1]))) out.strasse = join(kdSeg[1]);
   }
 
   // Rückfall ohne Spaltenerkennung: Regeln über den Fließtext.
@@ -209,3 +233,29 @@ export function linesFromTesseract(page: { blocks: Array<{ paragraphs: Array<{ l
         out.push({ text: l.text.replace(/\n$/, ''), words: l.words.map((w) => ({ text: w.text, ...w.bbox })) });
   return out;
 }
+
+/** Plausibilität je Feld – nur solche Werte werden aus weiteren Durchgängen übernommen. */
+const PLAUSIBEL: Partial<Record<keyof Auftragsdaten, (v: string) => boolean>> = {
+  kundeNr: (v) => /^\d{3,8}$/.test(v),
+  strasse: (v) => /\p{L}{3}/u.test(v) && /\d/.test(v),
+  ort: (v) => /^\d{5}\s+\p{Lu}\p{L}{2}/u.test(v),
+  tel: (v) => (v.match(/\d/g) || []).length >= 6,
+  auftrag: (v) => AUFTRAG_RE.test(v),
+  pos: (v) => POS_RE.test(v),
+};
+
+/** Ergebnisse mehrerer Lesedurchgänge zusammenführen: erster plausibler Wert je Feld gewinnt. */
+export function zusammenfuehren(...erg: Partial<Auftragsdaten>[]): Partial<Auftragsdaten> {
+  const out: Partial<Auftragsdaten> = {};
+  const felder = new Set(erg.flatMap((e) => Object.keys(e))) as Set<keyof Auftragsdaten>;
+  for (const k of felder) {
+    const ok = PLAUSIBEL[k];
+    const werte = erg.map((e) => e[k]).filter((v): v is string => !!v);
+    out[k] = (ok ? werte.find(ok) : undefined) ?? werte[0];
+  }
+  return out;
+}
+
+/** Fehlen noch wichtige Felder? Dann lohnt ein weiterer Lesedurchgang. */
+export const unvollstaendig = (d: Partial<Auftragsdaten>) =>
+  (['kundeNr', 'strasse', 'ort', 'auftrag', 'pos'] as const).some((k) => !d[k] || (PLAUSIBEL[k] && !PLAUSIBEL[k]!(d[k]!)));

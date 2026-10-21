@@ -36,11 +36,19 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 ## Kartenerkennung
 
-- Barcode: ZXing (Code 39 / Code 128), liefert die **Position** (z. B. `A26333-01`). Der Auftrag ergibt sich aus der Position.
-- Text: Tesseract (Deutsch) auf dem Gerät, ohne Server. `src/lib/cardParser.ts` liest Kunden-Nr., Kunde, Straße, PLZ/Ort, Telefon, Projekt, Auftrag + Bezeichnung und Position + Beschreibung anhand der Feldbeschriftungen und Spalten der Karte.
-- Ergebnis immer prüfen: Der Hinweis „Aus Scan · Bitte prüfen“ bleibt stehen. Der Kundenname in der schmalen Spalte ist am fehleranfälligsten.
-- Die OCR-Dateien (~5 MB) liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`). Sie werden beim ersten Öffnen der App mitgespeichert.
-- Tests mit dem OCR-Ergebnis der Beispielkarte (sauber, als Handyfoto, als Kamerabild) in `src/lib/cardParser.test.ts`.
+**Mit QR-Code (empfohlen):** Steht auf der Rapportkarte ein QR-Code mit den Auftragsdaten, erkennt die App ihn ohne Antippen in unter einer Sekunde. Alle Felder werden fehlerfrei übernommen, und Schritt 1 ist mit „QR-Code“ markiert. Format und Druckvorgaben für den Softwareanbieter stehen in [`docs/QR-Code-Rapportkarte.md`](docs/QR-Code-Rapportkarte.md).
+
+**Ohne QR-Code (Texterkennung):**
+- Strichcode (Code 39/128) wird automatisch erkannt und liefert die Position. Sonst „Karte lesen“ tippen.
+- Ausgewertet wird nur der Sucherrahmen, und zwar das schärfste Kamerabild der letzten Sekunde (gegen Verwackeln).
+- Das Bild wird aufbereitet (`src/lib/bild.ts`): vergrößern, Schatten herausrechnen, Tisch/Hand ausblenden, schärfen. Danach läuft Tesseract (Deutsch) auf dem Gerät.
+- `src/lib/cardParser.ts` richtet sich an der PLZ aus und findet von dort Straße (darüber), Telefon (darunter) und Kunden-Nr. (links). Er funktioniert auch, wenn die kleine Beschriftung „Kunde:“ nicht lesbar ist.
+- Schritt 1 zeigt das Scan-Bild zum Vergleichen (antippen = vergrößern). Es bleibt nur auf dem Gerät und kommt nicht ins PDF.
+- Taschenlampen-Knopf, wo das Handy ihn anbietet (Android).
+
+Messung mit simulierten Handybildern (`scripts/bench/`): 41 von 54 Feldern richtig, vorher 19. Am schwierigsten bleiben stark verwackelte Bilder und der Kundenname in der schmalen Spalte. Beides erledigt der QR-Code.
+
+Die OCR-Dateien liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`) und werden beim ersten Öffnen der App mitgespeichert.
 
 ## PDF
 
@@ -57,7 +65,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 ## Offene Punkte
 
 - **Materialstamm**: `src/data/katalog.ts` enthält Beispieldaten. Den echten Stamm dort eintragen (Nr., Bezeichnung, Einheit, Kategorie).
-- **Barcode auf der Karte**: Die Beispielkarte hat ein leeres Barcode-Feld. Die Erkennung läuft dann nur per Text. Mit Barcode ist die Position sicherer.
+- **QR-Code auf der Karte**: beim Softwareanbieter anfragen, siehe `docs/QR-Code-Rapportkarte.md`. Bis dahin läuft die Erkennung per Text.
 - Gegenüber dem Entwurf geändert: Textbausteine in Schritt 2 entfernt, Plus/Minus durch Schnellknöpfe mit Rückgängig ersetzt, Fotos mit Bezeichnung und als Pflicht.
 - Gegenüber dem Entwurf ergänzt: Entwurf fortsetzen/verwerfen, Profil (Name, Qualifikation, Standort) statt fest „J. Keller“, Auslöser „Karte lesen“ und Galerie-Auswahl im Scan, „Heute“-Einträge erneut teilen, echtes Datum statt 20.10.2026.
 - Weggelassen: Variante 1b „Übersicht“ (nicht gewählt) und die Spalte „Gehen“ (laut Chat entfallen).

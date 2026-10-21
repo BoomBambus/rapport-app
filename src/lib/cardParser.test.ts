@@ -3,6 +3,9 @@ import { fixCode, parseCard, type OcrLine } from './cardParser';
 import scan from './__fixtures__/karte-scan.json';
 import foto from './__fixtures__/karte-foto.json';
 import kamera from './__fixtures__/karte-kamera.json';
+import dunkel from './__fixtures__/karte-kamera-dunkel.json';
+import weit from './__fixtures__/karte-kamera-weit.json';
+import schraeg from './__fixtures__/karte-kamera-schraeg.json';
 
 // Fixtures: Tesseract-Ergebnis (PSM 4) der Beispiel-Rapportkarte (Testkunde „Mustermann“;
 // die Karte selbst liegt aus Datenschutzgründen nicht im Repository) –
@@ -25,6 +28,20 @@ describe('parseCard', () => {
       expect(d.kunde).toMatch(/^\(?Musterman/);
       expect(d.kunde).not.toMatch(/SCHLOSSEREI|Niemandsland|\d/);
       expect(d.kunde).toMatch(/Kundenname folgt!/);
+    });
+  }
+
+  // Hochkant-Handybilder nach Bildaufbereitung (src/lib/bild.ts): Beschriftung „Kunde:“ fehlt dort
+  // teils ganz – Kunden-Nr., Straße und Telefon werden über die PLZ-Spalte gefunden.
+  for (const [name, lines] of [['dunkel/Schatten', dunkel], ['zu weit weg', weit], ['schräg gehalten', schraeg]] as const) {
+    it(`Kamerabild ${name}: Adressblock ohne „Kunde:“-Beschriftung`, () => {
+      const d = parseCard(lines as OcrLine[]);
+      expect(d.kundeNr).toBe('10868');
+      expect(d.strasse).toBe('Niemandslandstr. 1');
+      expect(d.ort).toBe('68229 Mannheim');
+      expect(d.tel).toBe('0621 / 4829-310');
+      expect(d.pos).toBe('A26333-01');
+      expect(d.auftrag).toBe('A26333');
     });
   }
 

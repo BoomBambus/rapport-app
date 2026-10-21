@@ -46,6 +46,10 @@ export interface Rapport extends Auftragsdaten {
   /** ISO-Datum (JJJJ-MM-TT) des Rapports. */
   datum: string;
   fromScan: boolean;
+  /** Woher die Auftragsdaten stammen: QR-Code (verlässlich) oder Texterkennung (prüfen) */
+  scanQuelle?: 'qr' | 'text';
+  /** Kartenausschnitt des Scans zum Gegenprüfen (nur auf dem Gerät, nicht im PDF) */
+  scanBild?: string;
   arbeiten: string;
   bemerkungen: string;
   material: MaterialPos[];

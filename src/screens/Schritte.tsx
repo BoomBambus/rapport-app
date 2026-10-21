@@ -47,6 +47,7 @@ function Schnellwahl({ schritte, onAdd, onUndo, kannUndo, label }: { schritte: [
 
 // ---------- 1 · Auftrag ----------
 export function AuftragStep({ d, set, errors, clearError }: { d: Rapport; set: Set; errors: Errors; clearError: (k: FeldFehler) => void }) {
+  const [gross, setGross] = useState(false);
   const f = (k: keyof Auftragsdaten) => ({
     value: d[k],
     error: errors[k as FeldFehler],
@@ -58,9 +59,30 @@ export function AuftragStep({ d, set, errors, clearError }: { d: Rapport; set: S
   return (
     <div style={{ ...pad16, gap: 16 }}>
       {d.fromScan && (
-        <div style={{ background: 'var(--blau-hell)', padding: '12px 16px', display: 'flex', gap: 12, alignItems: 'center', fontSize: 14, lineHeight: '20px' }}>
-          <Badge variant="blau">Aus Scan</Badge>
-          <span>Felder aus der Auftragskarte übernommen. Bitte prüfen.</span>
+        <div style={{ background: 'var(--blau-hell)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: '20px' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <Badge variant="blau">{d.scanQuelle === 'qr' ? 'QR-Code' : 'Aus Scan'}</Badge>
+            <span>{d.scanQuelle === 'qr' ? 'Felder aus dem QR-Code der Karte übernommen.' : 'Felder per Texterkennung übernommen. Bitte mit der Karte vergleichen.'}</span>
+          </div>
+          {d.scanBild && (
+            <button
+              onClick={() => setGross(true)}
+              aria-label="Scan-Bild vergrößern"
+              style={{ appearance: 'none', border: '1px solid var(--linie)', padding: 0, background: 'var(--weiss)', cursor: 'zoom-in', display: 'block' }}
+            >
+              <img src={d.scanBild} alt="Gescannte Rapportkarte" style={{ display: 'block', width: '100%', height: 'auto' }} />
+            </button>
+          )}
+        </div>
+      )}
+      {gross && d.scanBild && (
+        <div
+          role="dialog"
+          aria-label="Scan-Bild"
+          onClick={() => setGross(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'var(--tiefschwarz)', overflow: 'auto', cursor: 'zoom-out', paddingTop: 'max(48px, env(safe-area-inset-top))' }}
+        >
+          <img src={d.scanBild} alt="Gescannte Rapportkarte" style={{ display: 'block', width: '200%', maxWidth: 'none', height: 'auto' }} />
         </div>
       )}
       <div className="grid-nr">

@@ -8,7 +8,7 @@ import { loadEntwurf, loadGesendet, loadProfil, saveEntwurf, saveGesendet, saveP
 import type { Auftragsdaten, GesendeterRapport, Profil, Rapport } from './lib/types';
 import { pruefe, type Errors } from './lib/pruefung';
 import { Start } from './screens/Start';
-import { Scan } from './screens/Scan';
+import { Scan, type ScanErgebnis } from './screens/Scan';
 import { AuftragStep, ArbeitenStep, MaterialStep, StundenStep, FahrtStep, FotosStep, UnterschriftStep } from './screens/Schritte';
 import { PdfVorschau } from './screens/PdfVorschau';
 import { KatalogSheet, ManuellSheet, ProfilSheet, Sheet } from './screens/Sheets';
@@ -30,7 +30,7 @@ type SheetId = 'katalog' | 'manuell' | 'profil' | null;
 const LEER: Auftragsdaten = { kundeNr: '', kunde: '', strasse: '', ort: '', tel: '', projekt: '', auftrag: '', auftragText: '', pos: '', posText: '' };
 const PROFIL_LEER: Profil = { name: '', q: 'F', standort: 'Werkstatt Dettingen' };
 
-function neuerRapport(base: Partial<Auftragsdaten>, profil: Profil, fromScan: boolean): Rapport {
+function neuerRapport(base: Partial<Auftragsdaten> & Partial<Pick<Rapport, 'scanBild' | 'scanQuelle'>>, profil: Profil, fromScan: boolean): Rapport {
   const datum = isoDate();
   return {
     ...LEER,
@@ -125,7 +125,7 @@ export default function App() {
     scrollRef.current?.scrollTo(0, 0);
   };
 
-  const starten = (base: Partial<Auftragsdaten>, fromScan: boolean) => {
+  const starten = (base: Partial<Auftragsdaten> | ScanErgebnis, fromScan: boolean) => {
     setD(neuerRapport(base, profil, fromScan));
     go('auftrag');
   };
@@ -145,7 +145,7 @@ export default function App() {
       const { blob, name } = await pdfErzeugen(d);
       const ergebnis = await teilenOderSpeichern(blob, name);
       if (ergebnis === 'abgebrochen') return;
-      const neu: GesendeterRapport[] = [{ id: uid(), gesendetAm: new Date().toISOString(), dateiname: name, rapport: d }, ...gesendet];
+      const neu: GesendeterRapport[] = [{ id: uid(), gesendetAm: new Date().toISOString(), dateiname: name, rapport: { ...d, scanBild: undefined } }, ...gesendet];
       setGesendet(neu);
       await saveGesendet(neu).catch(() => {});
       setD(null);
