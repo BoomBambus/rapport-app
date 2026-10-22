@@ -1,65 +1,50 @@
 # QR-Code auf der Rapportkarte
 
-Anleitung für das Programm, das die Rapportkarte druckt (Warenwirtschaft / Auftragsbearbeitung).
+Die Tagesrapport-App liest den QR-Code auf der Rapportkarte automatisch, ohne Antippen, und übernimmt die Auftragsdaten fehlerfrei. Was nicht im QR-Code steht, ergänzt sie per Texterkennung.
 
-Die Tagesrapport-App liest diesen QR-Code in unter einer Sekunde und übernimmt alle Auftragsdaten fehlerfrei. Ohne QR-Code muss sie den gedruckten Text per Texterkennung lesen, was bei schlechtem Licht oder schräger Haltung Fehler macht.
+## Format (festgelegt, Stand Oktober 2026)
 
-## Inhalt
-
-Reiner Text, **UTF-8**, ein Feld pro Zeile im Format `SCHLÜSSEL=Wert`. Die erste Zeile `RAPPORT` ist optional, hilft aber beim Erkennen.
+Ein Eintrag je Feld, getrennt durch `;`, jeweils `Schlüssel - Wert`:
 
 ```
-RAPPORT
-KUNDENNR=10868
-KUNDE=Mustermann GmbH
-STRASSE=Niemandslandstr. 1
-PLZ=68229
-ORT=Mannheim
-TEL=0621 / 4829-310
-PROJEKT=
-AUFTRAG=A26333
-AUFTRAGTEXT=Testauftrag
-POS=A26333-01
-POSTEXT=Rapportposition Test
+Kunde -  Mustermann | Kundenname folgt ! ; Straße - Niemandslandstr. 1 ; PLZ Ort - 68229 Mannheim ; Auftragsnr -  A26333 ; Auftragsbez Testauftrag ; Pos -   ; Posbez
 ```
 
-| Schlüssel | Inhalt | Pflicht |
+| Schlüssel im QR-Code | Feld in der App | Pflicht in Schritt 1 |
 |---|---|---|
-| `KUNDENNR` | Kundennummer | empfohlen |
-| `KUNDE` | Kundenname | ja |
-| `STRASSE` | Straße und Hausnummer | ja |
-| `PLZ` | Postleitzahl | ja |
-| `ORT` | Ort | ja |
-| `TEL` | Telefon | nein |
-| `PROJEKT` | Projekt | nein |
-| `AUFTRAG` | Auftragsnummer | ja (sonst aus `POS` abgeleitet) |
-| `AUFTRAGTEXT` | Auftragsbezeichnung | nein |
-| `POS` | Positionsnummer, z. B. `A26333-01` | ja |
-| `POSTEXT` | Positionsbezeichnung | nein |
+| `Kunde` | Kunde | ja |
+| `Straße` | Straße und Hausnummer | ja |
+| `PLZ Ort` | PLZ, Ort | ja |
+| `Auftragsnr` | Auftrag | ja |
+| `Auftragsbez` | Bezeichnung (Auftrag) | nein |
+| `Pos` | Position | ja |
+| `Posbez` | Bezeichnung (Position) | nein |
 
 Die App ist tolerant:
-- Groß-/Kleinschreibung der Schlüssel ist egal.
-- `:` statt `=` geht.
-- `;` statt Zeilenumbruch geht.
-- `PLZ` und `ORT` dürfen auch zusammen in `ORT` stehen (`ORT=68229 Mannheim`).
-- Alternativ geht JSON mit denselben Schlüsseln, z. B. `{"kundennr":"10868","kunde":"…"}`.
+- Als Trennzeichen gehen `-`, `=`, `:` oder gar keins (wie bei `Auftragsbez Testauftrag`).
+- Mehrfache Leerzeichen und Groß-/Kleinschreibung sind egal.
+- Leere Werte (`Pos -   ;`) werden ignoriert.
 
-Leere Felder können wegfallen. Umlaute, `&`, `|` usw. sind erlaubt, solange der Code als UTF-8 erzeugt wird.
+Zusätzlich verstanden, falls später ergänzt: `Kundennr`, `Tel`, `Projekt` sowie das ältere Format mit `=` und Zeilenumbrüchen oder JSON.
 
-Fehlen Pflichtfelder (z. B. nur `POS=…`), liest die App den Rest zusätzlich per Texterkennung.
+## Ablauf in der App
 
-## Druck
+- **`Pos` gefüllt:** Alle Pflichtfelder stehen im QR-Code. Die App übernimmt sie in unter einer Sekunde, ohne Texterkennung. Schritt 1 zeigt „QR-Code“. Kunden-Nr. und Telefon bleiben leer, weil sie nicht im Code stehen, und können von Hand ergänzt werden.
+- **`Pos` leer (wie im Beispiel):** Die App übernimmt die QR-Felder und liest Position, Kunden-Nr. und Telefon per Texterkennung dazu. Das dauert ein paar Sekunden. Schritt 1 zeigt dann „Bitte mit der Karte vergleichen“.
 
-- **Größe:** mindestens **30 × 30 mm**, besser 35 mm. Kleiner wird von Handys mit einfacher Kamera aus normalem Abstand nicht sicher erkannt.
-- **Fehlerkorrektur:** Stufe **M** (Standard).
-- **Ruhezone:** rundherum mindestens 4 Module weißer Rand, keine Linien oder Text im Rand.
-- **Platz:** im Feld „Barcode“ rechts neben der Position. Der bisherige Code-39-Strichcode kann bleiben oder wegfallen.
-- Schwarz auf Weiß, nicht auf farbigem Hintergrund.
+Getestet mit dem echten QR-Code auf dem Nachbau der Karte: alle 9 Felder richtig.
 
 ## Beispiel zum Testen
 
 ![Beispiel-QR-Code](qr-beispiel.png)
 
-`qr-beispiel.png` enthält genau den Beispielinhalt oben. Auf Papier ausgedruckt (≈ 35 mm) oder am Bildschirm gezeigt, sollte die App ihn sofort erkennen und Schritt 1 mit „QR-Code“ markiert ausfüllen.
+`qr-beispiel.png` enthält Ihr Format mit ausgefüllter Position (`Pos - A26333-01 ; Posbez Rapportposition Test`). Ausgedruckt (≈ 35 mm) oder am Bildschirm gezeigt, füllt die App Schritt 1 sofort aus und zeigt „QR-Code“.
+
+## Druck
+
+- **Größe:** mindestens **30 × 30 mm**, sonst erkennen ältere Handys ihn aus normalem Abstand nicht sicher.
+- **Ruhezone:** rundherum weißer Rand von mind. 4 Modulen, keine Linien oder Text im Rand.
+- Schwarz auf Weiß, nicht auf farbigem Hintergrund.
+- Codierung UTF-8, damit `ß` und Umlaute stimmen.
 
 Technische Umsetzung in der App: `src/lib/qr.ts` (Format) und `src/lib/scanner.ts` (Erkennung).

@@ -39,6 +39,28 @@ describe('QR-Code der Rapportkarte', () => {
     expect(qrVollstaendig(d)).toBe(false);
   });
 
+  // QR-Code der umgebauten Rapportkarte (vom Nutzer, Oktober 2026): „Schlüssel - Wert ; …“,
+  // „Auftragsbez“ ohne Trennzeichen, Position leer.
+  it('liest das Format der Rapportkarte 2026', () => {
+    const d = leseQr("Kunde -  Mustermann | Kundenname folgt ! ; Straße - Niemandslandstr. 1 ; PLZ Ort - 68229 Mannheim ; Auftragsnr -  A26333 ; Auftragsbez Testauftrag ; Pos -   ; Posbez  ")!;
+    expect(d).toEqual({
+      kunde: 'Mustermann | Kundenname folgt !',
+      strasse: 'Niemandslandstr. 1',
+      ort: '68229 Mannheim',
+      auftrag: 'A26333',
+      auftragText: 'Testauftrag',
+    });
+    // Position fehlt → App liest den Rest per Texterkennung dazu
+    expect(qrVollstaendig(d)).toBe(false);
+    expect(qrVollstaendig({ ...d, pos: 'A26333-01' })).toBe(true);
+  });
+
+  it('Schlüssel mit Trennzeichen „-“, ohne Trennzeichen, mit Punkt/Bindestrich', () => {
+    expect(leseQr('Kunden-Nr.: 10868; Pos - A26333-01; Posbez Rapportposition Test; Tel - 0621 / 4829-310')).toEqual({
+      kundeNr: '10868', pos: 'A26333-01', auftrag: 'A26333', posText: 'Rapportposition Test', tel: '0621 / 4829-310',
+    });
+  });
+
   it('fremder QR-Code (z. B. Webadresse) → null', () => {
     expect(leseQr('https://www.schlosserei-menge.de')).toBeNull();
     expect(leseQr('{kaputt')).toBeNull();

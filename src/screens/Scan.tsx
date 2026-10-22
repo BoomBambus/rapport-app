@@ -91,7 +91,8 @@ export function Scan({ onAbbrechen, onErkannt, onManuell }: { onAbbrechen: () =>
       setHinweis('Karte nicht erkannt. Bitte den Kartenkopf flach, gut beleuchtet und ausfüllend in den Rahmen halten und erneut versuchen.');
       return;
     }
-    fertig({ ...felder, scanQuelle: qd ? 'qr' : 'text', scanBild: vorschauBild(ausschnitt) });
+    // QR unvollständig + Texterkennung ergänzt → wie Texterkennung behandeln (bitte prüfen)
+    fertig({ ...felder, scanQuelle: 'text', scanBild: vorschauBild(ausschnitt) });
   };
 
   /** Sichtbaren Sucherausschnitt aus dem Video holen. */

@@ -38,7 +38,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 **Gestaltung der Karte:** Wie die Rapportkarte aussehen sollte, damit die Texterkennung zuverlässig funktioniert (Scanfeld, eine Angabe pro Zeile, Schwarz auf Weiß), steht in [`docs/Rapportkarte-Gestaltung.md`](docs/Rapportkarte-Gestaltung.md). Mit dem vorgeschlagenen Layout: 52 von 54 Feldern richtig, statt 44 mit der bisherigen Karte.
 
-**Mit QR-Code (empfohlen):** Steht auf der Rapportkarte ein QR-Code mit den Auftragsdaten, erkennt die App ihn ohne Antippen in unter einer Sekunde. Alle Felder werden fehlerfrei übernommen, und Schritt 1 ist mit „QR-Code“ markiert. Format und Druckvorgaben für den Softwareanbieter stehen in [`docs/QR-Code-Rapportkarte.md`](docs/QR-Code-Rapportkarte.md).
+**Mit QR-Code (empfohlen):** Die Rapportkarte trägt einen QR-Code im Format `Kunde - … ; Straße - … ; PLZ Ort - … ; Auftragsnr - … ; Auftragsbez … ; Pos - … ; Posbez …`. Die App erkennt ihn ohne Antippen; ist `Pos` gefüllt, in unter einer Sekunde, sonst ergänzt die Texterkennung die fehlenden Felder. Alle Felder werden fehlerfrei übernommen, und Schritt 1 ist mit „QR-Code“ markiert. Format und Druckvorgaben für den Softwareanbieter stehen in [`docs/QR-Code-Rapportkarte.md`](docs/QR-Code-Rapportkarte.md).
 
 **Ohne QR-Code (Texterkennung):**
 - Strichcode (Code 39/128) wird automatisch erkannt und liefert die Position. Sonst „Karte lesen“ tippen.
