@@ -7,7 +7,7 @@ import { WERKSTATT_ADRESSE } from '../data/firma';
 import { blobToCanvas } from '../lib/ocr';
 import { summeStd } from '../lib/pdf';
 import { MIN_FOTOS, type Errors, type FeldFehler } from '../lib/pruefung';
-import type { Art, Auftragsdaten, MaterialPos, Qualifikation, Rapport, StundenPos } from '../lib/types';
+import { QUALI_KNOEPFE, type Art, type Auftragsdaten, type MaterialPos, type Rapport, type StundenPos } from '../lib/types';
 
 type Set = (p: Partial<Rapport>) => void;
 type SetFn = (fn: (r: Rapport) => Partial<Rapport>) => void;
@@ -251,11 +251,6 @@ export function MaterialStep({ d, setFn, clearBand, onKatalog, onManuell }: { d:
 }
 
 // ---------- 4 · Stunden ----------
-const QUALI: [Qualifikation, string][] = [
-  ['M', 'Meister'],
-  ['F', 'Facharb.'],
-  ['H', 'Helfer'],
-];
 const ARTEN: Art[] = ['Werkstatt', 'Montage'];
 const ZEIT_SCHRITTE: [string, number][] = [
   ['+15 min', 0.25],
@@ -281,8 +276,8 @@ export function StundenStep({ d, setFn, clearBand }: { d: Rapport; setFn: SetFn;
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span className="feld-titel">Qualifikation</span>
-            <div className="grid-3">
-              {QUALI.map(([k, l]) => (
+            <div className="grid-4">
+              {QUALI_KNOEPFE.map(([k, l]) => (
                 <Chip key={k} on={r.q === k} onClick={() => upd(r.id, { q: k })}>
                   {l}
                 </Chip>

@@ -1,4 +1,4 @@
-export type Qualifikation = 'M' | 'F' | 'H';
+export type Qualifikation = 'M' | 'F' | 'H' | 'A';
 export type Art = 'Werkstatt' | 'Montage' | 'Intern';
 
 /** Felder, die von der Rapportkarte kommen (Scan oder Hand). */
@@ -81,4 +81,13 @@ export interface Profil {
   standort: string;
 }
 
-export const QUALI_LANG: Record<Qualifikation, string> = { M: 'Meister', F: 'Facharbeiter', H: 'Helfer' };
+export const QUALI_LANG: Record<Qualifikation, string> = { M: 'Meister', F: 'Facharbeiter', H: 'Helfer', A: 'Auszubildender' };
+/** Auswahlknöpfe (kurze Beschriftung, passt zu viert in eine Zeile) */
+export const QUALI_KNOEPFE: [Qualifikation, string][] = [
+  ['M', 'Meister'],
+  ['F', 'Facharb.'],
+  ['H', 'Helfer'],
+  ['A', 'Azubi'],
+];
+/** Legende für Rapport und PDF: „M = Meister, F = Facharbeiter, H = Helfer, A = Auszubildender“ */
+export const QUALI_LEGENDE = (Object.keys(QUALI_LANG) as Qualifikation[]).map((k) => `${k} = ${QUALI_LANG[k]}`).join(', ');

@@ -3,7 +3,7 @@ import { Button, Input } from '../ds';
 import { Chip } from '../ui';
 import { EINHEITEN, KATALOG, KATEGORIEN, type Artikel } from '../data/katalog';
 import { parseZahl, uid } from '../lib/format';
-import type { MaterialPos, Profil, Qualifikation, Rapport } from '../lib/types';
+import { QUALI_KNOEPFE, type MaterialPos, type Profil, type Rapport } from '../lib/types';
 
 /** Untere Ebene mit Overlay, rotem Strich und Titel. */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
@@ -139,12 +139,7 @@ export function ManuellSheet({ onSave }: { onSave: (m: MaterialPos) => void }) {
 export function ProfilSheet({ profil, onSave }: { profil: Profil; onSave: (p: Profil) => void }) {
   const [p, setP] = useState(profil);
   const [err, setErr] = useState<string | undefined>();
-  const Q: [Qualifikation, string][] = [
-    ['M', 'Meister'],
-    ['F', 'Facharb.'],
-    ['H', 'Helfer'],
-  ];
-  return (
+    return (
     <div className="safe-bottom" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <Input
         label="Name"
@@ -161,8 +156,8 @@ export function ProfilSheet({ profil, onSave }: { profil: Profil; onSave: (p: Pr
       />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span className="feld-titel">Qualifikation</span>
-        <div className="grid-3">
-          {Q.map(([k, l]) => (
+        <div className="grid-4">
+          {QUALI_KNOEPFE.map(([k, l]) => (
             <Chip key={k} on={p.q === k} onClick={() => setP({ ...p, q: k })}>
               {l}
             </Chip>

@@ -3,7 +3,7 @@ import { Logo } from '../ds';
 import { code39Bars } from '../lib/code39';
 import { deDate, fmt, fmtHM, fmtStd } from '../lib/format';
 import { FUSSZEILE, rapportNr, stundenZeilen, summeStd } from '../lib/pdf';
-import type { Rapport } from '../lib/types';
+import { QUALI_LEGENDE, type Rapport } from '../lib/types';
 
 // HTML-Vorschau der ersten PDF-Seite (595 px = A4-Breite in pt), auf Bildschirmbreite skaliert.
 const cell: CSSProperties = { padding: '3px 0' };
@@ -150,7 +150,10 @@ export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: s
               zeilen={std.map((r) => [r.name, r.q, r.datum, r.art, fmtStd(r.std)])}
               summe={['Summe Arbeitszeit', fmtStd(summeStd(d)) + ' Std']}
             />
-            <span style={{ fontSize: 8, lineHeight: '11px' }}>Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit) · * M = Meister, F = Facharbeiter, H = Helfer</span>
+            <span style={{ fontSize: 8, lineHeight: '11px' }}>
+              Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit)
+              <br />* {QUALI_LEGENDE}
+            </span>
           </div>
           <Tabelle
             titel="FAHRT"

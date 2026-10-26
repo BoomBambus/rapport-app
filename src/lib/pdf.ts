@@ -3,7 +3,7 @@ import type { jsPDF as JsPDFType } from 'jspdf';
 import { LOGO_SRC } from '../ds';
 import { code39Bars, code39Units } from './code39';
 import { deDate, fmt, fmtHM, fmtStd } from './format';
-import type { Rapport } from './types';
+import { QUALI_LEGENDE, type Rapport } from './types';
 
 export const FUSSZEILE = 'Schlosserei Menge · Weiherstr. 12 · 78465 Konstanz-Dettingen · zertifiziert nach EN 1090';
 
@@ -204,8 +204,9 @@ export async function buildPdf(d: Rapport, lfd = 1): Promise<{ blob: Blob; name:
     ['Summe Arbeitszeit', fmtStd(summeStd(d)) + ' Std'],
   );
   doc.setFontSize(7.5);
-  doc.text('Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit) · * M = Meister, F = Facharbeiter, H = Helfer', L, y + 1.5);
-  y += 2;
+  doc.text('Reine Arbeitszeit vor Ort (zzgl. An-, Abfahrt und Rüstzeit)', L, y + 1.5);
+  doc.text('* ' + QUALI_LEGENDE, L, y + 5);
+  y += 5.5;
 
   tabelle(
     'FAHRT',
