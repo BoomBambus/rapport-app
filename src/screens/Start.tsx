@@ -1,7 +1,7 @@
 import { ScanBarcode } from 'lucide-react';
 import { Badge, Card, Eyebrow, Logo } from '../ds';
 import { fmtStd, langDatum } from '../lib/format';
-import { summeStd } from '../lib/pdf';
+import { summeStd } from '../lib/rapport';
 import { QUALI_LANG, type GesendeterRapport, type Profil, type Rapport } from '../lib/types';
 
 export function Start({
@@ -87,7 +87,7 @@ export function Start({
             <button
               key={g.id}
               onClick={() => onTeilen(g)}
-              title="PDF erneut teilen"
+              title="Rapport erneut teilen"
               style={{
                 appearance: 'none',
                 background: 'none',

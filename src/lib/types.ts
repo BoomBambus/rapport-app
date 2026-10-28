@@ -48,7 +48,7 @@ export interface Rapport extends Auftragsdaten {
   fromScan: boolean;
   /** Woher die Auftragsdaten stammen: QR-Code (verlässlich) oder Texterkennung (prüfen) */
   scanQuelle?: 'qr' | 'text';
-  /** Kartenausschnitt des Scans zum Gegenprüfen (nur auf dem Gerät, nicht im PDF) */
+  /** Kartenausschnitt des Scans zum Gegenprüfen (nur auf dem Gerät, nicht im Rapport) */
   scanBild?: string;
   arbeiten: string;
   bemerkungen: string;
@@ -89,5 +89,5 @@ export const QUALI_KNOEPFE: [Qualifikation, string][] = [
   ['H', 'Helfer'],
   ['A', 'Azubi'],
 ];
-/** Legende für Rapport und PDF: „M = Meister, F = Facharbeiter, H = Helfer, A = Auszubildender“ */
+/** Legende im Rapport: „M = Meister, F = Facharbeiter, H = Helfer, A = Auszubildender“ */
 export const QUALI_LEGENDE = (Object.keys(QUALI_LANG) as Qualifikation[]).map((k) => `${k} = ${QUALI_LANG[k]}`).join(', ');

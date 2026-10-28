@@ -3,14 +3,15 @@ import { ChevronLeft } from 'lucide-react';
 import { Badge, Button, Toast } from './ds';
 import { BandFehler } from './ui';
 import { isoDate, deDate, uid } from './lib/format';
-import { buildPdf, dateiname, teilenOderSpeichern } from './lib/pdf';
+import { dateiname, teilenOderSpeichern } from './lib/rapport';
+import { buildDocx } from './lib/word';
 import { loadEntwurf, loadGesendet, loadProfil, saveEntwurf, saveGesendet, saveProfil } from './lib/storage';
 import type { Auftragsdaten, GesendeterRapport, Profil, Rapport } from './lib/types';
 import { pruefe, type Errors } from './lib/pruefung';
 import { Start } from './screens/Start';
 import { Scan, type ScanErgebnis } from './screens/Scan';
 import { AuftragStep, ArbeitenStep, MaterialStep, StundenStep, FahrtStep, FotosStep, UnterschriftStep } from './screens/Schritte';
-import { PdfVorschau } from './screens/PdfVorschau';
+import { RapportVorschau } from './screens/RapportVorschau';
 import { KatalogSheet, ManuellSheet, ProfilSheet, Sheet } from './screens/Sheets';
 
 export const STEPS = [
@@ -100,7 +101,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const ok = () => flash('Offline bereit', 'Die App funktioniert jetzt auch ohne Internet – Scannen und PDF eingeschlossen.');
+    const ok = () => flash('Offline bereit', 'Die App funktioniert jetzt auch ohne Internet – Scannen und Rapport eingeschlossen.');
     window.addEventListener('offline-bereit', ok);
     return () => window.removeEventListener('offline-bereit', ok);
   }, [flash]);
@@ -133,16 +134,16 @@ export default function App() {
   const stepIdx = STEPS.findIndex((x) => x[0] === screen);
   const inFlow = stepIdx >= 0 && d;
 
-  const pdfErzeugen = async (r: Rapport) => {
+  const dokumentErzeugen = async (r: Rapport) => {
     const lfd = lfdNr(r, gesendet);
-    return buildPdf(r, lfd);
+    return buildDocx(r, lfd);
   };
 
   const senden = async () => {
     if (!d || busy) return;
     setBusy(true);
     try {
-      const { blob, name } = await pdfErzeugen(d);
+      const { blob, name } = await dokumentErzeugen(d);
       const ergebnis = await teilenOderSpeichern(blob, name);
       if (ergebnis === 'abgebrochen') return;
       const neu: GesendeterRapport[] = [{ id: uid(), gesendetAm: new Date().toISOString(), dateiname: name, rapport: { ...d, scanBild: undefined } }, ...gesendet];
@@ -150,9 +151,9 @@ export default function App() {
       await saveGesendet(neu).catch(() => {});
       setD(null);
       go('start');
-      flash(ergebnis === 'geteilt' ? 'Rapport gesendet' : 'PDF heruntergeladen', name);
+      flash(ergebnis === 'geteilt' ? 'Rapport gesendet' : 'Word-Dokument gespeichert', name);
     } catch {
-      flash('PDF konnte nicht erstellt werden', 'Bitte versuchen Sie es erneut.', 'fehler');
+      flash('Rapport konnte nicht erstellt werden', 'Bitte versuchen Sie es erneut.', 'fehler');
     } finally {
       setBusy(false);
     }
@@ -162,11 +163,11 @@ export default function App() {
     if (busy) return;
     setBusy(true);
     try {
-      const { blob, name } = await pdfErzeugen(r);
+      const { blob, name } = await dokumentErzeugen(r);
       const e = await teilenOderSpeichern(blob, name);
-      if (e === 'gespeichert') flash('PDF heruntergeladen', name);
+      if (e === 'gespeichert') flash('Word-Dokument gespeichert', name);
     } catch {
-      flash('PDF konnte nicht erstellt werden', 'Bitte versuchen Sie es erneut.', 'fehler');
+      flash('Rapport konnte nicht erstellt werden', 'Bitte versuchen Sie es erneut.', 'fehler');
     } finally {
       setBusy(false);
     }
@@ -197,7 +198,7 @@ export default function App() {
   if (!geladen) return <div className="app" />;
 
   const heute = isoDate();
-  const primaryLabel = busy ? 'PDF wird erstellt …' : screen === 'pdf' ? 'Rapport senden' : STEPS[stepIdx + 1]?.[0] === 'pdf' ? 'Rapport erzeugen' : 'Weiter';
+  const primaryLabel = busy ? 'Rapport wird erstellt …' : screen === 'pdf' ? 'Rapport senden' : STEPS[stepIdx + 1]?.[0] === 'pdf' ? 'Rapport erzeugen' : 'Weiter';
 
   return (
     <div className={'app' + (screen === 'scan' ? ' dunkel' : '')}>
@@ -274,7 +275,7 @@ export default function App() {
               />
             )}
             {screen === 'unterschrift' && <UnterschriftStep d={d} set={set} clearBand={() => setBandErr(null)} />}
-            {screen === 'pdf' && <PdfVorschau d={d} lfd={lfdNr(d, gesendet)} name={dateiname(d)} />}
+            {screen === 'pdf' && <RapportVorschau d={d} lfd={lfdNr(d, gesendet)} name={dateiname(d)} />}
           </div>
 
           <div className="safe-bottom" style={{ flex: 'none', background: 'var(--menge-blau)', paddingTop: 16, paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>

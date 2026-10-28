@@ -2,12 +2,12 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Logo } from '../ds';
 import { code39Bars } from '../lib/code39';
 import { deDate, fmt, fmtHM, fmtStd } from '../lib/format';
-import { FUSSZEILE, rapportNr, stundenZeilen, summeStd } from '../lib/pdf';
+import { FUSSZEILE, rapportNr, stundenZeilen, summeStd } from '../lib/rapport';
 import { QUALI_LEGENDE, type Rapport } from '../lib/types';
 
-// HTML-Vorschau der ersten PDF-Seite (595 px = A4-Breite in pt), auf Bildschirmbreite skaliert.
+// HTML-Vorschau der ersten Seite des Word-Rapports (595 px = A4-Breite in pt), auf Bildschirmbreite skaliert.
 const cell: CSSProperties = { padding: '3px 0' };
-// Spalten wie im PDF (515 px Satzbreite)
+// Spalten wie im Word-Dokument (515 px Satzbreite)
 const MAT_COLS = '46px 52px 64px 1fr';
 const STD_COLS = '1fr 64px 80px 90px 44px';
 const FAHRT_COLS = '1fr 160px 90px';
@@ -45,7 +45,7 @@ function Tabelle({ titel, cols, kopf, zeilen, rechts = [], summe }: { titel: str
   );
 }
 
-export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: string }) {
+export function RapportVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: string }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.56);
   useLayoutEffect(() => {
@@ -63,7 +63,7 @@ export function PdfVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: s
     <div style={{ padding: 16, background: 'var(--blau-hell)', display: 'flex', flexDirection: 'column', gap: 12, minHeight: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13, lineHeight: '18px' }}>
         <span style={{ overflowWrap: 'anywhere' }}>{name}</span>
-        <span style={{ flex: 'none' }}>A4 · {nFotos ? 'inkl. Fotoanhang' : '1 Seite'}</span>
+        <span style={{ flex: 'none' }}>Word · A4 · {nFotos ? 'inkl. Fotoanhang' : '1 Seite'}</span>
       </div>
       <div ref={wrap}>
         <div

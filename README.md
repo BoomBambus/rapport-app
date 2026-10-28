@@ -1,6 +1,6 @@
 # Tagesrapport-App · Schlosserei Menge
 
-Web-App (PWA) für Mitarbeiter: Rapportkarte scannen, Arbeiten, Material, Stunden, Fotos und Unterschriften erfassen, Rapport als A4-PDF teilen.
+Web-App (PWA) für Mitarbeiter: Rapportkarte scannen, Arbeiten, Material, Stunden, Fotos und Unterschriften erfassen, Rapport als Word-Dokument (A4, .docx) teilen.
 Umsetzung von Variante **1a „Assistent“** aus dem Claude-Design-Entwurf (`project/Rapport Konzept.dc.html`, `project/Rapport App.dc.html`).
 
 ## Starten
@@ -22,7 +22,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 ## Ablauf
 
-1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = PDF erneut teilen), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
+1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = Rapport erneut teilen), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
 2. **Scan**: Die Kamera sucht laufend den Code-39-Barcode der Rapportkarte. Wird er gefunden, wird ein Standbild per Texterkennung gelesen. Ohne Barcode (die Beispielkarte hat noch keinen): **„Karte lesen“** tippen. Ohne Kamera: Karte fotografieren oder ein Foto aus der Galerie wählen.
 3. Acht Schritte mit Fortschrittsbalken. „Weiter“ geht erst, wenn die Pflichtangaben stimmen (`src/lib/pruefung.ts`):
    - **1 Auftrag:** Kunde, Straße mit Hausnummer, PLZ und Ort (4–5-stellige PLZ, auch CH/A), Auftrag, Position.
@@ -32,7 +32,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
    - **5 Fahrt:** Fahrzeit (+15 min / +30 min / +1 h, Rückgängig) und Kilometer, jeweils Hin- und Rückfahrt, oder „Keine Fahrt“. Der Knopf „Route in Google Maps ansehen“ öffnet die Route Werkstatt → Kunde. Erst durch dieses Antippen geht die Kundenadresse an Google; die App selbst fragt nichts ab.
    - **6 Fotos:** mindestens 2 Fotos, jedes mit Bezeichnung (Kamera oder Galerie).
    - **7 Unterschrift:** Auftragnehmer, und Auftraggeber oder „nicht anwesend“.
-4. **Rapport senden** erzeugt das PDF und öffnet auf dem Handy das Teilen-Menü (Mail, Messenger, Drive …). Am PC wird es heruntergeladen. Danach steht der Rapport unter „Heute“.
+4. **Rapport senden** erzeugt das Word-Dokument und öffnet auf dem iPhone das Teilen-Menü (Mail, Messenger, Drive …). Android-Chrome lässt Word-Dateien nicht ins Teilen-Menü, dort und am PC wird die Datei heruntergeladen. Danach steht der Rapport unter „Heute“.
 
 ## Kartenerkennung
 
@@ -48,23 +48,23 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 - Kartenkopf 2026 („Kunde: 10868“ + Name, Adressblock „Anrede/Kunde/Straße/PLZ, Ort/Tel“, Strichcode „LA…“) wird unterstützt, siehe `docs/Rapportkarte-Gestaltung.md`.
 - Neues Formular-Layout („Kunde: …“, „Straße: …“, eine Angabe pro Zeile) wird automatisch erkannt.
 - `src/lib/cardParser.ts` richtet sich bei der bisherigen Karte an der PLZ aus und findet von dort Straße (darüber), Telefon (darunter) und Kunden-Nr. (links). Er funktioniert auch, wenn die kleine Beschriftung „Kunde:“ nicht lesbar ist.
-- Schritt 1 zeigt das Scan-Bild zum Vergleichen (antippen = vergrößern). Es bleibt nur auf dem Gerät und kommt nicht ins PDF.
+- Schritt 1 zeigt das Scan-Bild zum Vergleichen (antippen = vergrößern). Es bleibt nur auf dem Gerät und kommt nicht in den Rapport.
 - Taschenlampen-Knopf, wo das Handy ihn anbietet (Android).
 
 Messung mit simulierten Handybildern (`scripts/bench/`): 41 von 54 Feldern richtig, vorher 19. Am schwierigsten bleiben stark verwackelte Bilder und der Kundenname in der schmalen Spalte. Beides erledigt der QR-Code.
 
 Die OCR-Dateien liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`) und werden beim ersten Öffnen der App mitgespeichert.
 
-## PDF
+## Word-Dokument
 
-`src/lib/pdf.ts` (jsPDF), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, dann untereinander die Tabellen Material, Stunden (mit Summe und Legende M/F/H) und Fahrt, beide Unterschriften. Fotos kommen als Anhang auf eigene Seiten. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
+`src/lib/word.ts` (Bibliothek `docx`, läuft komplett im Browser), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, dann untereinander die Tabellen Material, Stunden (mit Summe und Legende M/F/H/A) und Fahrt, beide Unterschriften. Fotos kommen als Anhang auf eine eigene Seite (zwei pro Zeile, mit Bezeichnung). Fußzeile mit „Seite X von Y“. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
 
 ## Datenschutz und Offline-Betrieb
 
 - **Keine Kundendaten auf fremden Servern.** Kundendaten, Arbeiten, Stunden, Fotos und Unterschriften liegen nur im Browser des Handys (IndexedDB): Entwurf, gesendete Rapporte der letzten 14 Tage, Profil. Es gibt kein Backend, keine Analyse und keine externen Schriften oder CDNs.
 - **Texterkennung und Barcode laufen auf dem Gerät.** Das Kamerabild wird nirgends hochgeladen.
-- **Sicherheitsrichtlinie (CSP)** in der gebauten App: Der Browser darf nur Dateien vom eigenen Server laden und blockiert jede Verbindung zu anderen Adressen. Daten verlassen das Handy nur, wenn der Mitarbeiter das PDF selbst über „Teilen“ verschickt oder herunterlädt.
-- **Komplett offline:** Beim ersten Öffnen (mit Internet) speichert die App alle Dateien inklusive Texterkennung (~10 MB) auf dem Gerät und meldet „Offline bereit“. Danach funktioniert alles ohne Netz: Start, Scan, alle Schritte, PDF. Mit Internet holt sie sich Updates automatisch.
+- **Sicherheitsrichtlinie (CSP)** in der gebauten App: Der Browser darf nur Dateien vom eigenen Server laden und blockiert jede Verbindung zu anderen Adressen. Daten verlassen das Handy nur, wenn der Mitarbeiter den Rapport selbst über „Teilen“ verschickt oder herunterlädt.
+- **Komplett offline:** Beim ersten Öffnen (mit Internet) speichert die App alle Dateien inklusive Texterkennung (~10 MB) auf dem Gerät und meldet „Offline bereit“. Danach funktioniert alles ohne Netz: Start, Scan, alle Schritte, Rapport. Mit Internet holt sie sich Updates automatisch.
 - Der Webserver (z. B. GitHub Pages) liefert nur die App-Dateien aus und sieht keine Rapportdaten.
 
 ## Offene Punkte
@@ -81,8 +81,8 @@ Die OCR-Dateien liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vo
 src/
   App.tsx              Zustand, Schrittfolge, Prüfung, Senden
   ds/                  Komponenten des Design-Systems (Port aus project/_ds)
-  screens/             Start, Scan, Schritte 1–6, PDF-Vorschau, Bottom-Sheets
-  lib/                 cardParser, ocr, pdf, code39, storage, format, types
+  screens/             Start, Scan, Schritte 1–6, Rapport-Vorschau, Bottom-Sheets
+  lib/                 cardParser, ocr, word, rapport, code39, storage, format, types
   data/katalog.ts      Materialkatalog (Beispiel), Einheiten, Textbausteine
   styles/              Design-Tokens + App-CSS
 project/               Design-Entwurf aus Claude Design (Referenz)

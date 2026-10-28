@@ -5,7 +5,7 @@ import { Chip } from '../ui';
 import { deDate, fmt, fmtHM, fmtStd, parseZahl, uhrzeit, uid } from '../lib/format';
 import { WERKSTATT_ADRESSE } from '../data/firma';
 import { blobToCanvas } from '../lib/ocr';
-import { summeStd } from '../lib/pdf';
+import { summeStd } from '../lib/rapport';
 import { MIN_FOTOS, type Errors, type FeldFehler } from '../lib/pruefung';
 import { QUALI_KNOEPFE, type Art, type Auftragsdaten, type MaterialPos, type Rapport, type StundenPos } from '../lib/types';
 
@@ -428,7 +428,7 @@ export function FotosStep({ d, setFn, errors, clearBand, onFehler }: { d: Rappor
     const z = uhrzeit();
     for (const f of files) {
       try {
-        // Verkleinern, damit Entwurf und PDF handlich bleiben
+        // Verkleinern, damit Entwurf und Rapport handlich bleiben
         const src = (await blobToCanvas(f, 1600)).toDataURL('image/jpeg', 0.85);
         setFn((r) => ({ fotos: [...r.fotos, { id: uid(), name: '', zeit: z, src }] }));
         clearBand();
