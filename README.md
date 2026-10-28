@@ -1,6 +1,6 @@
 # Tagesrapport-App · Schlosserei Menge
 
-Web-App (PWA) für Mitarbeiter: Rapportkarte scannen, Arbeiten, Material, Stunden, Fotos und Unterschriften erfassen, Rapport als Word-Dokument (A4, .docx) teilen.
+Web-App (PWA) für Mitarbeiter: Rapportkarte scannen, Arbeiten, Material, Stunden, Fotos und Unterschriften erfassen, Rapport als Word-Dokument und/oder PDF (A4) teilen. Gesendete Rapporte lassen sich auf dem Handy nachträglich korrigieren.
 Umsetzung von Variante **1a „Assistent“** aus dem Claude-Design-Entwurf (`project/Rapport Konzept.dc.html`, `project/Rapport App.dc.html`).
 
 ## Starten
@@ -22,7 +22,7 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
 
 ## Ablauf
 
-1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = Rapport erneut teilen), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
+1. **Start**: Datum, „Auftragskarte scannen“, „Ohne Karte beginnen“, die heute gesendeten Rapporte (antippen = **Bearbeiten** oder **Erneut teilen**), angemeldeter Mitarbeiter (antippen = Name ändern). Ein angefangener Rapport erscheint als **Entwurf**.
 2. **Scan**: Die Kamera sucht laufend den Code-39-Barcode der Rapportkarte. Wird er gefunden, wird ein Standbild per Texterkennung gelesen. Ohne Barcode (die Beispielkarte hat noch keinen): **„Karte lesen“** tippen. Ohne Kamera: Karte fotografieren oder ein Foto aus der Galerie wählen.
 3. Acht Schritte mit Fortschrittsbalken. „Weiter“ geht erst, wenn die Pflichtangaben stimmen (`src/lib/pruefung.ts`):
    - **1 Auftrag:** Kunde, Straße mit Hausnummer, PLZ und Ort (4–5-stellige PLZ, auch CH/A), Auftrag, Position.
@@ -32,7 +32,8 @@ Einmalig im Repository unter **Settings → Pages → Build and deployment → S
    - **5 Fahrt:** Fahrzeit (+15 min / +30 min / +1 h, Rückgängig) und Kilometer, jeweils Hin- und Rückfahrt, oder „Keine Fahrt“. Der Knopf „Route in Google Maps ansehen“ öffnet die Route Werkstatt → Kunde. Erst durch dieses Antippen geht die Kundenadresse an Google; die App selbst fragt nichts ab.
    - **6 Fotos:** mindestens 2 Fotos, jedes mit Bezeichnung (Kamera oder Galerie).
    - **7 Unterschrift:** Auftragnehmer, und Auftraggeber oder „nicht anwesend“.
-4. **Rapport senden** erzeugt das Word-Dokument und öffnet auf dem iPhone das Teilen-Menü (Mail, Messenger, Drive …). Android-Chrome lässt Word-Dateien nicht ins Teilen-Menü, dort und am PC wird die Datei heruntergeladen. Danach steht der Rapport unter „Heute“.
+4. Im letzten Schritt wählt man **Senden als: Word, PDF oder Beide** (die Wahl wird gemerkt). **Rapport senden** erzeugt die Datei(en) und öffnet das Teilen-Menü (Mail, Messenger, Drive …). Android-Chrome lässt Word-Dateien nicht ins Teilen-Menü – dort wird Word heruntergeladen, PDF lässt sich überall teilen. Am PC wird heruntergeladen. Danach steht der Rapport unter „Heute“.
+5. **Korrigieren nach dem Senden:** Rapport unter „Heute“ antippen → **Bearbeiten**. Alle Schritte sind wieder offen; gesendet wird mit **Korrektur senden**. Das Dokument trägt dann rot „Korrigierte Fassung“ im Kopf, der Dateiname endet auf `_Korrektur1` (`_Korrektur2` …). Der Eintrag unter „Heute“ zeigt „Korrigiert“. Gesendete Rapporte bleiben 14 Tage auf dem Gerät.
 
 ## Kartenerkennung
 
@@ -55,9 +56,9 @@ Messung mit simulierten Handybildern (`scripts/bench/`): 41 von 54 Feldern richt
 
 Die OCR-Dateien liegen unter `public/ocr` (`scripts/copy-ocr.mjs` kopiert sie vor `dev`/`build` aus `node_modules`) und werden beim ersten Öffnen der App mitgespeichert.
 
-## Word-Dokument
+## Word-Dokument und PDF
 
-`src/lib/word.ts` (Bibliothek `docx`, läuft komplett im Browser), Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, dann untereinander die Tabellen Material, Stunden (mit Summe und Legende M/F/H/A) und Fahrt, beide Unterschriften. Fotos kommen als Anhang auf eine eigene Seite (zwei pro Zeile, mit Bezeichnung). Fußzeile mit „Seite X von Y“. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
+`src/lib/word.ts` (Bibliothek `docx`) und `src/lib/pdf.ts` (jsPDF), beide laufen komplett im Browser. Gleiches Layout nach der Rapportkarte: Logo, Rapport-Nr. `R-<Position>-<lfd. Nr.>`, Kunde/Projekt/Auftrag, Positionstabelle mit Code-39-Barcode, Arbeiten, Bemerkungen, dann untereinander die Tabellen Material, Stunden (mit Summe und Legende M/F/H/A) und Fahrt, beide Unterschriften. Fotos kommen als Anhang auf eine eigene Seite (zwei pro Zeile, mit Bezeichnung). Fußzeile mit „Seite X von Y“. Der gedruckte Barcode ist lesbar (mit ZXing geprüft), ein ausgedruckter Rapport lässt sich also wieder einscannen.
 
 ## Datenschutz und Offline-Betrieb
 
@@ -82,7 +83,7 @@ src/
   App.tsx              Zustand, Schrittfolge, Prüfung, Senden
   ds/                  Komponenten des Design-Systems (Port aus project/_ds)
   screens/             Start, Scan, Schritte 1–6, Rapport-Vorschau, Bottom-Sheets
-  lib/                 cardParser, ocr, word, rapport, code39, storage, format, types
+  lib/                 cardParser, ocr, word, pdf, rapport, code39, storage, format, types
   data/katalog.ts      Materialkatalog (Beispiel), Einheiten, Textbausteine
   styles/              Design-Tokens + App-CSS
 project/               Design-Entwurf aus Claude Design (Referenz)

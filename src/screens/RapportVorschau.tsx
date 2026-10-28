@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Logo } from '../ds';
 import { code39Bars } from '../lib/code39';
 import { deDate, fmt, fmtHM, fmtStd } from '../lib/format';
-import { FUSSZEILE, rapportNr, stundenZeilen, summeStd } from '../lib/rapport';
+import { dateiname, FUSSZEILE, korrekturText, type Format, rapportNr, stundenZeilen, summeStd } from '../lib/rapport';
+import { Chip } from '../ui';
 import { QUALI_LEGENDE, type Rapport } from '../lib/types';
 
 // HTML-Vorschau der ersten Seite des Word-Rapports (595 px = A4-Breite in pt), auf Bildschirmbreite skaliert.
@@ -45,7 +46,13 @@ function Tabelle({ titel, cols, kopf, zeilen, rechts = [], summe }: { titel: str
   );
 }
 
-export function RapportVorschau({ d, lfd, name }: { d: Rapport; lfd: number; name: string }) {
+const FORMATE: [Format, string][] = [
+  ['docx', 'Word'],
+  ['pdf', 'PDF'],
+  ['beide', 'Beide'],
+];
+
+export function RapportVorschau({ d, lfd, format, onFormat }: { d: Rapport; lfd: number; format: Format; onFormat: (f: Format) => void }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.56);
   useLayoutEffect(() => {
@@ -61,9 +68,19 @@ export function RapportVorschau({ d, lfd, name }: { d: Rapport; lfd: number; nam
 
   return (
     <div style={{ padding: 16, background: 'var(--blau-hell)', display: 'flex', flexDirection: 'column', gap: 12, minHeight: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span className="feld-titel">Senden als</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {FORMATE.map(([f, l]) => (
+            <Chip key={f} on={format === f} onClick={() => onFormat(f)}>
+              {l}
+            </Chip>
+          ))}
+        </div>
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13, lineHeight: '18px' }}>
-        <span style={{ overflowWrap: 'anywhere' }}>{name}</span>
-        <span style={{ flex: 'none' }}>Word · A4 · {nFotos ? 'inkl. Fotoanhang' : '1 Seite'}</span>
+        <span style={{ overflowWrap: 'anywhere' }}>{format === 'beide' ? dateiname(d, 'docx') + ' + .pdf' : dateiname(d, format)}</span>
+        <span style={{ flex: 'none' }}>A4 · {nFotos ? 'inkl. Fotoanhang' : '1 Seite'}</span>
       </div>
       <div ref={wrap}>
         <div
@@ -87,6 +104,7 @@ export function RapportVorschau({ d, lfd, name }: { d: Rapport; lfd: number; nam
               <span style={{ fontSize: 24, lineHeight: '28px', fontWeight: 700 }}>Rapport</span>
               <span>Nr. {rapportNr(d, lfd)}</span>
               <span>Datum {datum}</span>
+              {d.korrektur ? <span style={{ fontWeight: 700, color: 'var(--signalrot)' }}>{korrekturText(d)}</span> : null}
             </div>
           </div>
           <div style={{ width: 40, height: 4, background: 'var(--signalrot)', marginLeft: -40 }} />

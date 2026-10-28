@@ -66,12 +66,16 @@ export interface Rapport extends Auftragsdaten {
   sigAG: string | null;
   sigAN: string | null;
   agAbwesend: boolean;
+  /** Wie oft der Rapport nach dem Senden korrigiert wurde (0/leer = Erstfassung) */
+  korrektur?: number;
 }
 
 export interface GesendeterRapport {
   id: string;
   gesendetAm: string; // ISO-Zeitstempel
   dateiname: string;
+  /** Zeitpunkt der letzten Korrektur (ISO) */
+  korrigiertAm?: string;
   rapport: Rapport;
 }
 
@@ -79,6 +83,8 @@ export interface Profil {
   name: string;
   q: Qualifikation;
   standort: string;
+  /** Gewähltes Ausgabeformat (Word, PDF oder beide) */
+  format?: 'docx' | 'pdf' | 'beide';
 }
 
 export const QUALI_LANG: Record<Qualifikation, string> = { M: 'Meister', F: 'Facharbeiter', H: 'Helfer', A: 'Auszubildender' };

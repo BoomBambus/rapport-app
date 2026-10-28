@@ -7,23 +7,25 @@ import { QUALI_LANG, type GesendeterRapport, type Profil, type Rapport } from '.
 export function Start({
   profil,
   entwurf,
+  entwurfIstKorrektur,
   heute,
   onScan,
   onManuell,
   onFortsetzen,
   onVerwerfen,
   onProfil,
-  onTeilen,
+  onAuswahl,
 }: {
   profil: Profil;
   entwurf: Rapport | null;
+  entwurfIstKorrektur: boolean;
   heute: GesendeterRapport[];
   onScan: () => void;
   onManuell: () => void;
   onFortsetzen: () => void;
   onVerwerfen: () => void;
   onProfil: () => void;
-  onTeilen: (g: GesendeterRapport) => void;
+  onAuswahl: (g: GesendeterRapport) => void;
 }) {
   return (
     <div className="scroll" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -37,14 +39,14 @@ export function Start({
 
       <div style={{ padding: '24px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {entwurf && (
-          <Card variant="kasten" eyebrow="Entwurf" title={[entwurf.pos || entwurf.auftrag || 'Neuer Rapport', entwurf.posText || entwurf.auftragText].filter(Boolean).join(' · ')} onClick={onFortsetzen}>
+          <Card variant="kasten" eyebrow={entwurfIstKorrektur ? 'Korrektur – noch nicht gesendet' : 'Entwurf'} title={[entwurf.pos || entwurf.auftrag || 'Neuer Rapport', entwurf.posText || entwurf.auftragText].filter(Boolean).join(' · ')} onClick={onFortsetzen}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
               <span>{entwurf.kunde || 'Rapport fortsetzen'}</span>
               <button
                 className="link-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm('Entwurf verwerfen? Eingaben, Fotos und Unterschriften gehen verloren.')) onVerwerfen();
+                  if (confirm(entwurfIstKorrektur ? 'Korrektur verwerfen? Der gesendete Rapport bleibt unverändert.' : 'Entwurf verwerfen? Eingaben, Fotos und Unterschriften gehen verloren.')) onVerwerfen();
                 }}
               >
                 Verwerfen
@@ -86,8 +88,8 @@ export function Start({
           return (
             <button
               key={g.id}
-              onClick={() => onTeilen(g)}
-              title="Rapport erneut teilen"
+              onClick={() => onAuswahl(g)}
+              title="Rapport bearbeiten oder erneut teilen"
               style={{
                 appearance: 'none',
                 background: 'none',
@@ -111,7 +113,7 @@ export function Start({
                   {[r.kunde, r.ort.replace(/^\d+\s*/, '')].filter(Boolean).join(', ')} · {fmtStd(summeStd(r))} Std
                 </span>
               </div>
-              <Badge variant="blau">Gesendet</Badge>
+              <Badge variant="blau">{g.korrigiertAm ? 'Korrigiert' : 'Gesendet'}</Badge>
             </button>
           );
         })}

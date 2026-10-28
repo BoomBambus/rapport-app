@@ -3,8 +3,9 @@ import { ChevronLeft } from 'lucide-react';
 import { Badge, Button, Toast } from './ds';
 import { BandFehler } from './ui';
 import { isoDate, deDate, uid } from './lib/format';
-import { dateiname, teilenOderSpeichern } from './lib/rapport';
+import { teilenOderSpeichern, type Format } from './lib/rapport';
 import { buildDocx } from './lib/word';
+import { buildPdf } from './lib/pdf';
 import { loadEntwurf, loadGesendet, loadProfil, saveEntwurf, saveGesendet, saveProfil } from './lib/storage';
 import type { Auftragsdaten, GesendeterRapport, Profil, Rapport } from './lib/types';
 import { pruefe, type Errors } from './lib/pruefung';
@@ -68,6 +69,8 @@ export default function App() {
   const [profil, setProfil] = useState<Profil>(PROFIL_LEER);
   const [gesendet, setGesendet] = useState<GesendeterRapport[]>([]);
   const [sheet, setSheet] = useState<SheetId>(null);
+  /** Angetippter gesendeter Rapport (Auswahl: bearbeiten oder erneut teilen) */
+  const [auswahl, setAuswahl] = useState<GesendeterRapport | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [bandErr, setBandErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -134,24 +137,53 @@ export default function App() {
   const stepIdx = STEPS.findIndex((x) => x[0] === screen);
   const inFlow = stepIdx >= 0 && d;
 
+  const format: Format = profil.format ?? 'docx';
+  const formatWaehlen = (f: Format) => {
+    const p = { ...profil, format: f };
+    setProfil(p);
+    saveProfil(p).catch(() => {});
+  };
+
+  /** Ist der aktuelle Entwurf die Korrektur eines bereits gesendeten Rapports? */
+  const istKorrektur = !!d && gesendet.some((g) => g.rapport.id === d.id);
+
   const dokumentErzeugen = async (r: Rapport) => {
     const lfd = lfdNr(r, gesendet);
-    return buildDocx(r, lfd);
+    const dateien: { blob: Blob; name: string }[] = [];
+    if (format !== 'pdf') dateien.push(await buildDocx(r, lfd));
+    if (format !== 'docx') dateien.push(await buildPdf(r, lfd));
+    return dateien;
+  };
+
+  const gespeichertTitel = format === 'beide' ? 'Dateien gespeichert' : format === 'pdf' ? 'PDF gespeichert' : 'Word-Dokument gespeichert';
+
+  /** Gesendeten Rapport wieder öffnen – beim erneuten Senden entsteht eine korrigierte Fassung. */
+  const bearbeiten = (g: GesendeterRapport) => {
+    setAuswahl(null);
+    if (d && d.id === g.rapport.id) return go('auftrag');
+    if (d && !confirm('Der angefangene Entwurf wird verworfen. Trotzdem bearbeiten?')) return;
+    setD({ ...g.rapport, korrektur: (g.rapport.korrektur ?? 0) + 1 });
+    go('auftrag');
   };
 
   const senden = async () => {
     if (!d || busy) return;
     setBusy(true);
     try {
-      const { blob, name } = await dokumentErzeugen(d);
-      const ergebnis = await teilenOderSpeichern(blob, name);
+      const dateien = await dokumentErzeugen(d);
+      const ergebnis = await teilenOderSpeichern(dateien);
       if (ergebnis === 'abgebrochen') return;
-      const neu: GesendeterRapport[] = [{ id: uid(), gesendetAm: new Date().toISOString(), dateiname: name, rapport: { ...d, scanBild: undefined } }, ...gesendet];
+      const name = dateien.map((x) => x.name).join(', ');
+      const rapport = { ...d, scanBild: undefined };
+      const jetzt = new Date().toISOString();
+      const neu: GesendeterRapport[] = istKorrektur
+        ? gesendet.map((g) => (g.rapport.id === d.id ? { ...g, dateiname: name, korrigiertAm: jetzt, rapport } : g))
+        : [{ id: uid(), gesendetAm: jetzt, dateiname: name, rapport }, ...gesendet];
       setGesendet(neu);
       await saveGesendet(neu).catch(() => {});
       setD(null);
       go('start');
-      flash(ergebnis === 'geteilt' ? 'Rapport gesendet' : 'Word-Dokument gespeichert', name);
+      flash(ergebnis === 'geteilt' ? (istKorrektur ? 'Korrektur gesendet' : 'Rapport gesendet') : gespeichertTitel, name);
     } catch {
       flash('Rapport konnte nicht erstellt werden', 'Bitte versuchen Sie es erneut.', 'fehler');
     } finally {
@@ -163,9 +195,9 @@ export default function App() {
     if (busy) return;
     setBusy(true);
     try {
-      const { blob, name } = await dokumentErzeugen(r);
-      const e = await teilenOderSpeichern(blob, name);
-      if (e === 'gespeichert') flash('Word-Dokument gespeichert', name);
+      const dateien = await dokumentErzeugen(r);
+      const e = await teilenOderSpeichern(dateien);
+      if (e === 'gespeichert') flash(gespeichertTitel, dateien.map((x) => x.name).join(', '));
     } catch {
       flash('Rapport konnte nicht erstellt werden', 'Bitte versuchen Sie es erneut.', 'fehler');
     } finally {
@@ -198,7 +230,7 @@ export default function App() {
   if (!geladen) return <div className="app" />;
 
   const heute = isoDate();
-  const primaryLabel = busy ? 'Rapport wird erstellt …' : screen === 'pdf' ? 'Rapport senden' : STEPS[stepIdx + 1]?.[0] === 'pdf' ? 'Rapport erzeugen' : 'Weiter';
+  const primaryLabel = busy ? 'Rapport wird erstellt …' : screen === 'pdf' ? (istKorrektur ? 'Korrektur senden' : 'Rapport senden') : STEPS[stepIdx + 1]?.[0] === 'pdf' ? 'Rapport erzeugen' : 'Weiter';
 
   return (
     <div className={'app' + (screen === 'scan' ? ' dunkel' : '')}>
@@ -206,13 +238,14 @@ export default function App() {
         <Start
           profil={profil}
           entwurf={d}
+          entwurfIstKorrektur={istKorrektur}
           heute={gesendet.filter((g) => g.gesendetAm.slice(0, 10) === heute || g.rapport.datum === heute)}
           onScan={() => go('scan')}
           onManuell={() => starten({}, false)}
           onFortsetzen={() => go('auftrag')}
           onVerwerfen={() => setD(null)}
           onProfil={() => setSheet('profil')}
-          onTeilen={(g) => teilen(g.rapport)}
+          onAuswahl={setAuswahl}
         />
       )}
 
@@ -275,7 +308,7 @@ export default function App() {
               />
             )}
             {screen === 'unterschrift' && <UnterschriftStep d={d} set={set} clearBand={() => setBandErr(null)} />}
-            {screen === 'pdf' && <RapportVorschau d={d} lfd={lfdNr(d, gesendet)} name={dateiname(d)} />}
+            {screen === 'pdf' && <RapportVorschau d={d} lfd={lfdNr(d, gesendet)} format={format} onFormat={formatWaehlen} />}
           </div>
 
           <div className="safe-bottom" style={{ flex: 'none', background: 'var(--menge-blau)', paddingTop: 16, paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -318,6 +351,32 @@ export default function App() {
               setSheet(null);
             }}
           />
+        </Sheet>
+      )}
+      {auswahl && (
+        <Sheet title={[auswahl.rapport.pos || auswahl.rapport.auftrag, auswahl.rapport.posText || auswahl.rapport.auftragText].filter(Boolean).join(' · ') || 'Rapport'} onClose={() => setAuswahl(null)}>
+          <div style={{ padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <span className="klein-grau">
+              Gesendet {new Date(auswahl.gesendetAm).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+              {auswahl.korrigiertAm && ` · korrigiert ${new Date(auswahl.korrigiertAm).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`}
+            </span>
+            <Button variant="primary" fullWidth onClick={() => bearbeiten(auswahl)}>
+              Bearbeiten
+            </Button>
+            <span className="klein-grau">Nach dem Bearbeiten wird der Rapport als „Korrigierte Fassung“ neu gesendet.</span>
+            <Button
+              variant="outline"
+              fullWidth
+              disabled={busy}
+              onClick={() => {
+                const r = auswahl.rapport;
+                setAuswahl(null);
+                teilen(r);
+              }}
+            >
+              Erneut teilen ({format === 'beide' ? 'Word + PDF' : format === 'pdf' ? 'PDF' : 'Word'})
+            </Button>
+          </div>
         </Sheet>
       )}
       {sheet === 'profil' && (

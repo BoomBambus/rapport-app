@@ -3,7 +3,7 @@ import type { IParagraphOptions, ITableCellOptions, ParagraphChild } from 'docx'
 import { LOGO_SRC } from '../ds';
 import { code39Bars, code39Units } from './code39';
 import { deDate, fmt, fmtHM, fmtStd } from './format';
-import { bildAufGroesse, dataUrlBytes, dateiname, DOCX_TYP, FUSSZEILE, rapportNr, stundenZeilen, summeStd } from './rapport';
+import { bildAufGroesse, dataUrlBytes, dateiname, DOCX_TYP, FUSSZEILE, korrekturText, rapportNr, stundenZeilen, summeStd } from './rapport';
 import { QUALI_LEGENDE, type Rapport } from './types';
 
 // Maße: 1 mm = 56,7 Twips (Word-Einheit für Abstände/Breiten); Bilder in Pixel bei 96 dpi (1 mm = 3,78 px)
@@ -136,6 +136,7 @@ export async function buildDocx(d: Rapport, lfd = 1): Promise<{ blob: Blob; name
               p([t('Rapport', { b: true, pt: 20 })], { alignment: AlignmentType.RIGHT }),
               p([t('Nr. ' + rapportNr(d, lfd), { pt: 9 })], { alignment: AlignmentType.RIGHT }),
               p([t('Datum ' + datum, { pt: 9 })], { alignment: AlignmentType.RIGHT }),
+              ...(d.korrektur ? [p([t(korrekturText(d), { b: true, pt: 9, farbe: 'E30613' })], { alignment: AlignmentType.RIGHT })] : []),
             ],
             SATZ - halb,
           ),

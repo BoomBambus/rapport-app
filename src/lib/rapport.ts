@@ -6,7 +6,13 @@ export const FUSSZEILE = 'Schlosserei Menge · Weiherstr. 12 · 78465 Konstanz-D
 export const DOCX_TYP = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 export const rapportNr = (d: Rapport, lfd: number) => 'R-' + (d.pos || d.auftrag || '0000') + '-' + lfd;
-export const dateiname = (d: Rapport) => 'Rapport_' + (d.pos || d.auftrag || 'neu').replace(/[^\w-]/g, '_') + '_' + d.datum + '.docx';
+/** Ausgabeformat: Word, PDF oder beide Dateien zusammen */
+export type Format = 'docx' | 'pdf' | 'beide';
+export const PDF_TYP = 'application/pdf';
+export const dateiname = (d: Rapport, ext: 'docx' | 'pdf' = 'docx') =>
+  'Rapport_' + (d.pos || d.auftrag || 'neu').replace(/[^\w-]/g, '_') + '_' + d.datum + (d.korrektur ? '_Korrektur' + d.korrektur : '') + '.' + ext;
+/** „Korrektur 2“ – Hinweis im Rapport, damit das Büro die neue Fassung erkennt */
+export const korrekturText = (d: Rapport) => (d.korrektur ? 'Korrigierte Fassung' + (d.korrektur > 1 ? ' (' + d.korrektur + ')' : '') : '');
 export const summeStd = (d: Rapport) => d.stunden.reduce((a, r) => a + r.std, 0);
 export const stundenZeilen = (d: Rapport) => d.stunden.filter((r) => r.name || r.std);
 
@@ -46,26 +52,29 @@ export function dataUrlBytes(url: string): Uint8Array {
 
 /**
  * Teilen-Menü (Handy) oder Download (Desktop/Android).
- * Hinweis: Android-Chrome lässt Word-Dateien nicht ins Teilen-Menü – dort wird heruntergeladen.
+ * Hinweis: Android-Chrome lässt Word-Dateien nicht ins Teilen-Menü – dort wird heruntergeladen. PDF geht überall.
  */
-export async function teilenOderSpeichern(blob: Blob, name: string): Promise<'geteilt' | 'gespeichert' | 'abgebrochen'> {
-  const file = new File([blob], name, { type: blob.type || DOCX_TYP });
-  if (navigator.canShare?.({ files: [file] })) {
+export async function teilenOderSpeichern(dateien: { blob: Blob; name: string }[]): Promise<'geteilt' | 'gespeichert' | 'abgebrochen'> {
+  const files = dateien.map((x) => new File([x.blob], x.name, { type: x.blob.type || (x.name.endsWith('.pdf') ? PDF_TYP : DOCX_TYP) }));
+  if (navigator.canShare?.({ files })) {
     try {
-      await navigator.share({ files: [file], title: name });
+      await navigator.share({ files, title: dateien.map((x) => x.name).join(', ') });
       return 'geteilt';
     } catch (e) {
       if ((e as Error).name === 'AbortError') return 'abgebrochen';
       // Teilen nicht möglich → herunterladen
     }
   }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  for (const x of dateien) {
+    const url = URL.createObjectURL(x.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = x.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    if (dateien.length > 1) await new Promise((r) => setTimeout(r, 400));
+  }
   return 'gespeichert';
 }
